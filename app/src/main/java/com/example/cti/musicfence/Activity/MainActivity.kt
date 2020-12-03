@@ -7,12 +7,10 @@ import android.content.Context
 import android.content.Intent
 import android.content.ServiceConnection
 import android.content.pm.PackageManager
+import android.os.Build
 import android.os.Bundle
 import android.os.IBinder
 import android.provider.MediaStore
-import android.support.v4.app.ActivityCompat
-import android.support.v4.content.ContextCompat
-import android.support.v7.app.AppCompatActivity
 import android.util.Log
 import android.view.MenuItem
 import android.view.View
@@ -22,15 +20,20 @@ import android.widget.ArrayAdapter
 import android.widget.ListView
 import android.widget.SeekBar
 import android.widget.TextView
+import androidx.annotation.RequiresApi
+import androidx.appcompat.app.AppCompatActivity
+import androidx.core.app.ActivityCompat
+import androidx.core.content.ContextCompat
 import com.example.cti.musicfence.Model.Musica
 import com.example.cti.musicfence.Model.geoFence
-import com.example.cti.musicfence.Model.mp3player
-import com.example.cti.musicfence.Model.mp3player.PlayerBinder
 import com.example.cti.musicfence.R
 import com.example.cti.musicfence.Service.GeoFenceTransitionsIntentService
+import com.example.cti.musicfence.Service.Mp3player
+import com.example.cti.musicfence.Service.Mp3player.PlayerBinder
 import com.example.cti.musicfence.Util.calculaDistancia
 import com.example.cti.musicfence.Util.dbFunc
 import com.google.android.gms.common.ConnectionResult
+import com.google.android.gms.common.api.GoogleApi
 import com.google.android.gms.common.api.GoogleApiClient
 import com.google.android.gms.common.api.ResultCallback
 import com.google.android.gms.common.api.Status
@@ -45,7 +48,8 @@ class MainActivity : AppCompatActivity(), ServiceConnection, ResultCallback<Stat
     private var conexao: ServiceConnection? = null
     private var listaViewMusicas: ListView? = null
     private val duracaoGeofence = 60 * 60 + 1000.toLong()
-    private var geofencingClient: GeofencingClient? =  LocationServices.getGeofencingClient(this)
+    private var geofencingClient: GeofencingClient? = context?.let { LocationServices.getGeofencingClient(it) }
+    @RequiresApi(Build.VERSION_CODES.JELLY_BEAN)
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_inicio)
@@ -66,7 +70,7 @@ class MainActivity : AppCompatActivity(), ServiceConnection, ResultCallback<Stat
         for (g in dbFunc.listar()) {
             val g2 = createGeofence(g)
             val geofencingRequest = geofencingRequest(g2)
-            geofencingClient.addGeofences(geofencingRequest, CriargeoPendingIntent()).addOnSuccessListener(this) { Log.d("Status", "sucesso.") }
+            geofencingClient?.addGeofences(geofencingRequest, CriargeoPendingIntent())?.addOnSuccessListener(this) { Log.d("Status", "sucesso.") }
         }
     }
 
@@ -126,7 +130,7 @@ class MainActivity : AppCompatActivity(), ServiceConnection, ResultCallback<Stat
         }
         conexao = this
         if (binder == null || !binder!!.isBinderAlive) {
-            val intentPlayer = Intent(this, mp3player::class.java)
+            val intentPlayer = Intent(this, Mp3player::class.java)
             bindService(intentPlayer, conexao as MainActivity, BIND_AUTO_CREATE)
             startService(intentPlayer)
         }
@@ -143,23 +147,23 @@ class MainActivity : AppCompatActivity(), ServiceConnection, ResultCallback<Stat
     }
 
     fun playMusic(view: View?) {
-        binder.play()
+        binder?.play()
     }
 
     fun pauseMusic(view: View?) {
-        binder.pause()
+        binder?.pause()
     }
 
     fun stopMusic(view: View?) {
-        binder.stop()
+        binder?.stop()
     }
 
     fun nextMusic(view: View?) {
-        binder.next()
+        binder?.next()
     }
 
     fun previousMusic(view: View?) {
-        binder.previous()
+        binder?.previous()
     }
 
     override fun onOptionsItemSelected(item: MenuItem): Boolean {
@@ -172,10 +176,10 @@ class MainActivity : AppCompatActivity(), ServiceConnection, ResultCallback<Stat
     override fun onServiceConnected(name: ComponentName, service: IBinder) {
         binder = service as PlayerBinder
         //this.musicas.setText(binder.getPath());
-        mp3player.playlist = listaMusic
+        Mp3player.playlist = listaMusic
         try {
             seekBar!!.max = binder!!.getDuration()
-            seekBar!!.progress = binder.getCurrentPosition()
+            seekBar!!.progress = binder!!.getCurrentPosition()
         } catch (e: Exception) {
             e.printStackTrace()
             return
@@ -187,6 +191,7 @@ class MainActivity : AppCompatActivity(), ServiceConnection, ResultCallback<Stat
     }
 
     val allMusic: ArrayList<Musica>
+        @RequiresApi(Build.VERSION_CODES.R)
         get() {
             val selection = MediaStore.Audio.Media.IS_MUSIC + "!= 0"
             val projection = arrayOf(
@@ -238,7 +243,7 @@ class MainActivity : AppCompatActivity(), ServiceConnection, ResultCallback<Stat
                     Log.i("Musica Geo", nomeMusica.toString())
                     var index = 0
                     for (m in listaMusic!!) {
-                        if (m.titulo.contains(nomeMusica.toString())) {
+                        if (m.titulo!!.contains(nomeMusica.toString())) {
                             Log.d("teste", "Play music")
                             binder!!.playMusic(index)
                             binder!!.play()

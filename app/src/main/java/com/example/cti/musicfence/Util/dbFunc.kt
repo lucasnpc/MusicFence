@@ -50,10 +50,10 @@ class dbFunc(context: Context?) {
         while (cursor.moveToNext()) {
             musica.titulo = cursor.getString(cursor.getColumnIndex("music"))
         }
-        return musica.titulo
+        return musica.titulo.toString()
     }
 
     init {
-        gateway = dbGateway.getInstance(context)
+        gateway = context?.let { dbGateway.getInstance(it) }!!
     }
 }

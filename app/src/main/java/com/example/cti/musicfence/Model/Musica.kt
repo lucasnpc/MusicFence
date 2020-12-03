@@ -1,5 +1,6 @@
 package com.example.cti.musicfence.Model
 
+import android.net.Uri
 import android.os.Parcel
 import android.os.Parcelable
 
@@ -41,7 +42,7 @@ class Musica : Parcelable {
     }
 
     companion object {
-        val CREATOR: Parcelable.Creator<Musica> = object : Parcelable.Creator<Musica?> {
+        val CREATOR: Parcelable.Creator<Musica?> = object : Parcelable.Creator<Musica?> {
             override fun createFromParcel(`in`: Parcel): Musica? {
                 return Musica(`in`.readInt(), `in`.readString(), `in`.readString(), `in`.readString(), `in`.readString(), `in`.readInt())
             }

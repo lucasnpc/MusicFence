@@ -11,7 +11,7 @@ class geoFence : Geofence {
     var longitude = 0.0
     var raio = 0.0
     var musica: String? = null
-    var id = 0
+    private var id = 0
 
     constructor(id: Int, latitude: Double, longitude: Double, raio: Double, musica: String?) {
         this.latitude = latitude

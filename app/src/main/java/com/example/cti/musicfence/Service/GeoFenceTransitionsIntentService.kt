@@ -6,9 +6,9 @@ import android.app.PendingIntent
 import android.content.Intent
 import android.graphics.Color
 import android.os.Build
-import android.support.annotation.RequiresApi
-import android.support.v4.app.NotificationCompat
 import android.util.Log
+import androidx.annotation.RequiresApi
+import androidx.core.app.NotificationCompat
 import com.example.cti.musicfence.Activity.MainActivity.Companion.entradaGeofence
 import com.google.android.gms.location.Geofence
 import com.google.android.gms.location.GeofencingEvent

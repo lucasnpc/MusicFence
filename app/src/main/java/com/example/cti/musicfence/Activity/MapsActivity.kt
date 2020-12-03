@@ -1,18 +1,22 @@
 package com.example.cti.musicfence.Activity
 
+import android.Manifest
+import android.annotation.SuppressLint
 import android.app.AlertDialog
 import android.app.PendingIntent
 import android.content.Intent
+import android.content.pm.PackageManager
 import android.graphics.Color
 import android.location.Location
 import android.location.LocationListener
 import android.location.LocationManager
 import android.os.Bundle
-import android.support.v4.app.FragmentActivity
 import android.util.Log
 import android.view.View
 import android.widget.*
 import android.widget.AdapterView.OnItemClickListener
+import androidx.core.app.ActivityCompat
+import androidx.fragment.app.FragmentActivity
 import com.example.cti.musicfence.Model.geoFence
 import com.example.cti.musicfence.R
 import com.example.cti.musicfence.Service.GeoFenceTransitionsIntentService
@@ -33,6 +37,7 @@ import com.google.android.gms.maps.model.BitmapDescriptorFactory
 import com.google.android.gms.maps.model.CircleOptions
 import com.google.android.gms.maps.model.LatLng
 import com.google.android.gms.maps.model.MarkerOptions
+import java.lang.Float
 
 class MapsActivity : FragmentActivity(), OnMapReadyCallback, GoogleApiClient.ConnectionCallbacks, GoogleApiClient.OnConnectionFailedListener, ResultCallback<Status> {
     private var mMap: GoogleMap? = null
@@ -74,6 +79,16 @@ class MapsActivity : FragmentActivity(), OnMapReadyCallback, GoogleApiClient.Con
             Log.i("Erro", "Necessita de GPS e Internet")
         } else {
             if (isNetworkEnabled) {
+                if (ActivityCompat.checkSelfPermission(this, Manifest.permission.ACCESS_FINE_LOCATION) != PackageManager.PERMISSION_GRANTED && ActivityCompat.checkSelfPermission(this, Manifest.permission.ACCESS_COARSE_LOCATION) != PackageManager.PERMISSION_GRANTED) {
+                    // TODO: Consider calling
+                    //    ActivityCompat#requestPermissions
+                    // here to request the missing permissions, and then overriding
+                    //   public void onRequestPermissionsResult(int requestCode, String[] permissions,
+                    //                                          int[] grantResults)
+                    // to handle the case where the user grants the permission. See the documentation
+                    // for ActivityCompat#requestPermissions for more details.
+                    return
+                }
                 locationManager.requestLocationUpdates(LocationManager.NETWORK_PROVIDER, 2000, 0f, locationListener)
                 Log.d("Internet", "Network Ativo")
                 location = locationManager.getLastKnownLocation(LocationManager.NETWORK_PROVIDER)
@@ -213,7 +228,7 @@ class MapsActivity : FragmentActivity(), OnMapReadyCallback, GoogleApiClient.Con
                     .snippet("Raio $item"))
             val circleOptions = CircleOptions()
                     .center(LatLng(point.latitude, point.longitude))
-                    .radius(java.lang.Float.valueOf(item).toDouble())
+                    .radius(Float.valueOf(item).toDouble())
                     .fillColor(0x40ff0000)
                     .strokeColor(Color.TRANSPARENT)
                     .strokeWidth(2f)
@@ -221,6 +236,7 @@ class MapsActivity : FragmentActivity(), OnMapReadyCallback, GoogleApiClient.Con
         }
     }
 
+    @SuppressLint("MissingPermission")
     private fun addGeo(request: GeofencingRequest) {
         Log.d("Geo Add: ", "Adicionada.")
         LocationServices.GeofencingApi.addGeofences(googleApiClient, request, CriargeoPendingIntent()
