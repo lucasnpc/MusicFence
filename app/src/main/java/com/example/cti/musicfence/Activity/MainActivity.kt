@@ -12,14 +12,10 @@ import android.os.Bundle
 import android.os.IBinder
 import android.provider.MediaStore
 import android.util.Log
-import android.view.MenuItem
 import android.view.View
+import android.widget.*
 import android.widget.AdapterView.OnItemClickListener
 import android.widget.AdapterView.OnItemLongClickListener
-import android.widget.ArrayAdapter
-import android.widget.ListView
-import android.widget.SeekBar
-import android.widget.TextView
 import androidx.annotation.RequiresApi
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.app.ActivityCompat
@@ -33,7 +29,6 @@ import com.example.cti.musicfence.Service.Mp3player.PlayerBinder
 import com.example.cti.musicfence.Util.calculaDistancia
 import com.example.cti.musicfence.Util.dbFunc
 import com.google.android.gms.common.ConnectionResult
-import com.google.android.gms.common.api.GoogleApi
 import com.google.android.gms.common.api.GoogleApiClient
 import com.google.android.gms.common.api.ResultCallback
 import com.google.android.gms.common.api.Status
@@ -57,11 +52,11 @@ class MainActivity : AppCompatActivity(), ServiceConnection, ResultCallback<Stat
         listaViewMusicas = findViewById<View>(R.id.lista_musicas) as ListView
         if (ContextCompat.checkSelfPermission(this, Manifest.permission.READ_EXTERNAL_STORAGE) !=
                 PackageManager.PERMISSION_GRANTED) {
-            if (ActivityCompat.shouldShowRequestPermissionRationale(this, Manifest.permission.READ_EXTERNAL_STORAGE));
-        } else {
             ActivityCompat.requestPermissions(this, arrayOf(Manifest.permission.READ_EXTERNAL_STORAGE),
                     MY_PERMISSIONS_READ_EXTERNAL_STORAGE)
         }
+        else
+            configurarLista()
         musicaAtual = findViewById<View>(R.id.textView2) as TextView
         val intentGeofence = Intent(".GeoFenceTransitionsIntentService")
         intentGeofence.setPackage("com.example.cti.")
@@ -77,7 +72,7 @@ class MainActivity : AppCompatActivity(), ServiceConnection, ResultCallback<Stat
     override fun onRequestPermissionsResult(requestCode: Int, permissions: Array<String>, grantResults: IntArray) {
         when (requestCode) {
             MY_PERMISSIONS_READ_EXTERNAL_STORAGE -> {
-                if (grantResults.size > 0 && grantResults[0] == PackageManager.PERMISSION_GRANTED) {
+                if (grantResults.isNotEmpty() && grantResults[0] == PackageManager.PERMISSION_GRANTED) {
                     configurarLista()
                 } else {
                 }
@@ -166,13 +161,6 @@ class MainActivity : AppCompatActivity(), ServiceConnection, ResultCallback<Stat
         binder?.previous()
     }
 
-    override fun onOptionsItemSelected(item: MenuItem): Boolean {
-        // Handle action bar item clicks here. The action bar will
-        // automatically handle clicks on the Home/Up button, so long
-        // as you specify a parent activity in AndroidManifest.xml.
-        return super.onOptionsItemSelected(item)
-    }
-
     override fun onServiceConnected(name: ComponentName, service: IBinder) {
         binder = service as PlayerBinder
         //this.musicas.setText(binder.getPath());
@@ -254,8 +242,5 @@ class MainActivity : AppCompatActivity(), ServiceConnection, ResultCallback<Stat
             }
         }
 
-        fun makeNotificationIntent(applicationContext: Context?, msg: String?): Intent? {
-            return makeNotificationIntent
-        }
     }
 }

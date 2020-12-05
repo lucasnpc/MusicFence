@@ -29,7 +29,7 @@ class GeoFenceTransitionsIntentService : IntentService(TAG) {
         }
     }
 
-    @RequiresApi(api = Build.VERSION_CODES.JELLY_BEAN)
+    /*@RequiresApi(api = Build.VERSION_CODES.JELLY_BEAN)
     private fun sendNotification(msg: String) {
         Log.i("Notificao", "Geofence $msg")
         //Intent notificationIntent = MainActivity.makeNotificationIntent(getApplicationContext(),msg);
@@ -52,7 +52,7 @@ class GeoFenceTransitionsIntentService : IntentService(TAG) {
                 .setDefaults(Notification.DEFAULT_LIGHTS or Notification.DEFAULT_VIBRATE or Notification.DEFAULT_SOUND)
                 .setAutoCancel(true)
         return notificationBuilder.build()
-    }
+    }*/
 
     companion object {
         private val TAG = GeoFenceTransitionsIntentService::class.java.simpleName

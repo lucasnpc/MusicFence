@@ -15,11 +15,13 @@ import android.util.Log
 import android.view.View
 import android.widget.*
 import android.widget.AdapterView.OnItemClickListener
+import androidx.appcompat.app.AppCompatActivity
 import androidx.core.app.ActivityCompat
 import androidx.fragment.app.FragmentActivity
 import com.example.cti.musicfence.Model.geoFence
 import com.example.cti.musicfence.R
 import com.example.cti.musicfence.Service.GeoFenceTransitionsIntentService
+import com.example.cti.musicfence.Util.LerCoordenadaAtual
 import com.example.cti.musicfence.Util.dbFunc
 import com.google.android.gms.common.ConnectionResult
 import com.google.android.gms.common.api.GoogleApiClient
@@ -39,7 +41,7 @@ import com.google.android.gms.maps.model.LatLng
 import com.google.android.gms.maps.model.MarkerOptions
 import java.lang.Float
 
-class MapsActivity : FragmentActivity(), OnMapReadyCallback, GoogleApiClient.ConnectionCallbacks, GoogleApiClient.OnConnectionFailedListener, ResultCallback<Status> {
+class MapsActivity : AppCompatActivity(), OnMapReadyCallback, GoogleApiClient.ConnectionCallbacks, GoogleApiClient.OnConnectionFailedListener, ResultCallback<Status> {
     private var mMap: GoogleMap? = null
     private val googleApiClient: GoogleApiClient? = GoogleApiClient.Builder(this)
             .addConnectionCallbacks(this)
@@ -54,7 +56,6 @@ class MapsActivity : FragmentActivity(), OnMapReadyCallback, GoogleApiClient.Con
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_maps)
-        // Obtain the SupportMapFragment and get notified when the map is ready to be used.
         val mapView: MapView = findViewById(R.id.mapView)
         mapView.onResume()
         mapView.getMapAsync(this)
@@ -79,16 +80,7 @@ class MapsActivity : FragmentActivity(), OnMapReadyCallback, GoogleApiClient.Con
             Log.i("Erro", "Necessita de GPS e Internet")
         } else {
             if (isNetworkEnabled) {
-                if (ActivityCompat.checkSelfPermission(this, Manifest.permission.ACCESS_FINE_LOCATION) != PackageManager.PERMISSION_GRANTED && ActivityCompat.checkSelfPermission(this, Manifest.permission.ACCESS_COARSE_LOCATION) != PackageManager.PERMISSION_GRANTED) {
-                    // TODO: Consider calling
-                    //    ActivityCompat#requestPermissions
-                    // here to request the missing permissions, and then overriding
-                    //   public void onRequestPermissionsResult(int requestCode, String[] permissions,
-                    //                                          int[] grantResults)
-                    // to handle the case where the user grants the permission. See the documentation
-                    // for ActivityCompat#requestPermissions for more details.
-                    return
-                }
+
                 locationManager.requestLocationUpdates(LocationManager.NETWORK_PROVIDER, 2000, 0f, locationListener)
                 Log.d("Internet", "Network Ativo")
                 location = locationManager.getLastKnownLocation(LocationManager.NETWORK_PROVIDER)
@@ -118,7 +110,11 @@ class MapsActivity : FragmentActivity(), OnMapReadyCallback, GoogleApiClient.Con
 
     fun callAcessLocation() {
         Log.i("Chamada", "Funcao Ativa")
-        readMyCurrentCoordenadas()
+        if (ActivityCompat.checkSelfPermission(this, Manifest.permission.ACCESS_FINE_LOCATION) != PackageManager.PERMISSION_GRANTED) {
+            ActivityCompat.requestPermissions(this, arrayOf(Manifest.permission.ACCESS_FINE_LOCATION), 1)
+        }
+        else
+            LerCoordenadaAtual.lerCoordenadas(this, meuLocationListener(),mMap)
     }
 
     override fun onStop() {
@@ -128,7 +124,7 @@ class MapsActivity : FragmentActivity(), OnMapReadyCallback, GoogleApiClient.Con
 
     fun pararConexao() {
         if (googleApiClient!!.isConnected) {
-            googleApiClient!!.disconnect()
+            googleApiClient.disconnect()
         }
     }
 
