@@ -3,18 +3,16 @@ package com.example.cti.musicfence.Service
 import android.app.Service
 import android.content.Intent
 import android.media.MediaPlayer
-import android.media.MediaPlayer.OnCompletionListener
 import android.os.Binder
 import android.os.IBinder
-import android.util.Log
-import android.widget.SeekBar
-import android.widget.SeekBar.OnSeekBarChangeListener
 import com.example.cti.musicfence.Activity.MainActivity
 import com.example.cti.musicfence.Interface.PlayerInterface
 import com.example.cti.musicfence.Model.Musica
 import java.util.*
 
-class Mp3player : Service(), OnCompletionListener {
+private const val ACTION_PLAY: String = "com.example.action.PLAY"
+
+class Mp3player : Service(), MediaPlayer.OnPreparedListener {
     private var mediaPlayer: MediaPlayer? = null
     private var MusicIndex = 0
     var isPlay = false
@@ -98,14 +96,17 @@ class Mp3player : Service(), OnCompletionListener {
         }
     }
 
-    override fun onCreate() {
-        super.onCreate()
-        mediaPlayer = MediaPlayer()
-    }
-
     override fun onStartCommand(intent: Intent, flags: Int, startId: Int): Int {
-        playlist = intent.getParcelableArrayListExtra("listaMusicas")
-        if (playlist != null) {
+        when(intent.action){
+            ACTION_PLAY -> {
+                mediaPlayer = MediaPlayer()
+                mediaPlayer?.apply {
+                    setOnPreparedListener(this@Mp3player)
+                    prepareAsync()
+                }
+            }
+        }
+        /*if (playlist != null) {
             MainActivity.seekBar!!.setOnSeekBarChangeListener(object : OnSeekBarChangeListener {
                 override fun onStopTrackingTouch(seekBar: SeekBar) {
                     mediaPlayer!!.seekTo(MainActivity.seekBar!!.progress)
@@ -128,7 +129,7 @@ class Mp3player : Service(), OnCompletionListener {
             }
         } else {
             Log.d("error musicfence", "playslist null")
-        }
+        }*/
         return super.onStartCommand(intent, flags, startId)
     }
 
@@ -136,7 +137,7 @@ class Mp3player : Service(), OnCompletionListener {
         return PlayerBinder()
     }
 
-    override fun onCompletion(mp: MediaPlayer) {
+    fun onCompletion(mp: MediaPlayer) {
         if (MusicIndex < playlist!!.size - 1) {
             MusicIndex += 1
         } else {
@@ -169,5 +170,9 @@ class Mp3player : Service(), OnCompletionListener {
 
     companion object {
         var playlist: ArrayList<Musica>? = null
+    }
+
+    override fun onPrepared(mp: MediaPlayer?) {
+        mediaPlayer?.start()
     }
 }

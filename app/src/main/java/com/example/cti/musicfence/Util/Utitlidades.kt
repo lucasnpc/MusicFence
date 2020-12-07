@@ -18,7 +18,7 @@ import com.google.android.gms.maps.model.LatLng
 import com.google.android.gms.maps.model.MarkerOptions
 import java.util.*
 
-class calculaDistancia {
+class calcDistancia {
     companion object {
         @JvmStatic
         fun distance(lat1: Double, lat2: Double, lon1: Double, lon2: Double,
@@ -42,9 +42,9 @@ class calculaDistancia {
     }
 }
 
-class dbFunc(context: Context?) {
+class databaseFunc(context: Context?) {
     private val tabela = "geoFence"
-    private val gateway: dbGateway
+    private val gateway: dbGateway = context?.let { dbGateway.getInstance(it) }!!
     fun adicionar(latitude: Double, longitude: Double, raio: Double, musica: String?): Boolean {
         val contentValues = ContentValues()
         contentValues.put("latitude", latitude)
@@ -86,9 +86,6 @@ class dbFunc(context: Context?) {
         return musica.titulo.toString()
     }
 
-    init {
-        gateway = context?.let { dbGateway.getInstance(it) }!!
-    }
 }
 
 class LerCoordenadaAtual() {
@@ -133,7 +130,7 @@ class LerCoordenadaAtual() {
             val minhaPos = LatLng(latitude, longitude)
             mMap!!.addMarker(MarkerOptions().position(minhaPos).title("Sua Posicao")
                     .icon(BitmapDescriptorFactory.defaultMarker(BitmapDescriptorFactory.HUE_BLUE)))
-            mMap!!.moveCamera(CameraUpdateFactory.newLatLngZoom(minhaPos, 15f))
+            mMap.moveCamera(CameraUpdateFactory.newLatLngZoom(minhaPos, 15f))
             Log.i("Posicao", "Lat: $latitude|Long: $longitude")
         }
     }

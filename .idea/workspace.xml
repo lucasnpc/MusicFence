@@ -6,7 +6,7 @@
     </shared>
   </component>
   <component name="AndroidLogFilters">
-    <option name="TOOL_WINDOW_LOG_LEVEL" value="error" />
+    <option name="TOOL_WINDOW_LOG_LEVEL" value="verbose" />
     <option name="TOOL_WINDOW_CONFIGURED_FILTER" value="Show only selected application" />
   </component>
   <component name="BranchesTreeState">
@@ -29,7 +29,7 @@
   </component>
   <component name="ChangeListManager">
     <list default="true" id="7f92cdf1-f172-46b3-8913-51be6810622f" name="Default" comment="">
-      <change afterPath="$PROJECT_DIR$/.idea/libraries/Gradle__androidx_fragment_fragment_ktx_1_2_5_aar.xml" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/app/src/main/res/xml/backup_descriptor.xml" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/.gradle/6.5/executionHistory/executionHistory.bin" beforeDir="false" afterPath="$PROJECT_DIR$/.gradle/6.5/executionHistory/executionHistory.bin" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/.gradle/6.5/executionHistory/executionHistory.lock" beforeDir="false" afterPath="$PROJECT_DIR$/.gradle/6.5/executionHistory/executionHistory.lock" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/.gradle/6.5/fileHashes/fileHashes.bin" beforeDir="false" afterPath="$PROJECT_DIR$/.gradle/6.5/fileHashes/fileHashes.bin" afterDir="false" />
@@ -41,21 +41,18 @@
       <change beforePath="$PROJECT_DIR$/.gradle/6.5/javaCompile/taskHistory.bin" beforeDir="false" afterPath="$PROJECT_DIR$/.gradle/6.5/javaCompile/taskHistory.bin" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/.gradle/buildOutputCleanup/buildOutputCleanup.lock" beforeDir="false" afterPath="$PROJECT_DIR$/.gradle/buildOutputCleanup/buildOutputCleanup.lock" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/.gradle/buildOutputCleanup/outputFiles.bin" beforeDir="false" afterPath="$PROJECT_DIR$/.gradle/buildOutputCleanup/outputFiles.bin" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/.gradle/checksums/checksums.lock" beforeDir="false" afterPath="$PROJECT_DIR$/.gradle/checksums/checksums.lock" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/.gradle/checksums/md5-checksums.bin" beforeDir="false" afterPath="$PROJECT_DIR$/.gradle/checksums/md5-checksums.bin" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/.gradle/checksums/sha1-checksums.bin" beforeDir="false" afterPath="$PROJECT_DIR$/.gradle/checksums/sha1-checksums.bin" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/.idea/caches/build_file_checksums.ser" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/caches/build_file_checksums.ser" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/.idea/libraries/Gradle__androidx_fragment_fragment_1_2_4_aar.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/libraries/Gradle__androidx_fragment_fragment_1_2_5_aar.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/.idea/libraries/Gradle__androidx_fragment_fragment_ktx_1_2_4_aar.xml" beforeDir="false" />
       <change beforePath="$PROJECT_DIR$/.idea/modules/app/MusicFence.app.iml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/modules/app/MusicFence.app.iml" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/app/build.gradle" beforeDir="false" afterPath="$PROJECT_DIR$/app/build.gradle" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/app/src/debug/res/values/google_maps_api.xml" beforeDir="false" afterPath="$PROJECT_DIR$/app/src/debug/res/values/google_maps_api.xml" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/app/src/main/AndroidManifest.xml" beforeDir="false" afterPath="$PROJECT_DIR$/app/src/main/AndroidManifest.xml" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/app/src/main/java/com/example/cti/musicfence/Activity/MainActivity.kt" beforeDir="false" afterPath="$PROJECT_DIR$/app/src/main/java/com/example/cti/musicfence/Activity/MainActivity.kt" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/app/src/main/java/com/example/cti/musicfence/Activity/MapsActivity.kt" beforeDir="false" afterPath="$PROJECT_DIR$/app/src/main/java/com/example/cti/musicfence/Activity/MapsActivity.kt" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/app/src/main/java/com/example/cti/musicfence/Service/GeoFenceTransitionsIntentService.kt" beforeDir="false" afterPath="$PROJECT_DIR$/app/src/main/java/com/example/cti/musicfence/Service/GeoFenceTransitionsIntentService.kt" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/app/src/main/java/com/example/cti/musicfence/Util/calculaDistancia.kt" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/app/src/main/java/com/example/cti/musicfence/Util/dbFunc.kt" beforeDir="false" afterPath="$PROJECT_DIR$/app/src/main/java/com/example/cti/musicfence/Util/Utitlidades.kt" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/app/src/main/java/com/example/cti/musicfence/Model/geoFence.kt" beforeDir="false" afterPath="$PROJECT_DIR$/app/src/main/java/com/example/cti/musicfence/Model/geoFence.kt" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/app/src/main/java/com/example/cti/musicfence/Service/GeoFenceTransitionsIntentService.kt" beforeDir="false" afterPath="$PROJECT_DIR$/app/src/main/java/com/example/cti/musicfence/Service/GeofenceBroadcastReceiver.kt" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/app/src/main/java/com/example/cti/musicfence/Service/Mp3player.kt" beforeDir="false" afterPath="$PROJECT_DIR$/app/src/main/java/com/example/cti/musicfence/Service/Mp3player.kt" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/app/src/main/java/com/example/cti/musicfence/Util/Utitlidades.kt" beforeDir="false" afterPath="$PROJECT_DIR$/app/src/main/java/com/example/cti/musicfence/Util/Utitlidades.kt" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/app/src/main/res/layout/custom.xml" beforeDir="false" afterPath="$PROJECT_DIR$/app/src/main/res/layout/custom.xml" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -86,15 +83,6 @@
         <option value="Kotlin Class" />
       </list>
     </option>
-  </component>
-  <component name="FindInProjectRecents">
-    <findStrings>
-      <find>binder</find>
-      <find>mediaPlayer</find>
-      <find>listaMusic</find>
-      <find>playlist</find>
-      <find>try</find>
-    </findStrings>
   </component>
   <component name="GenerateSignedApkSettings">
     <option name="KEY_STORE_PATH" value="$USER_HOME$/chave" />
@@ -141,7 +129,7 @@
       <recent name="com.example.cti.musicfence" />
     </key>
   </component>
-  <component name="RunManager">
+  <component name="RunManager" selected="Android App.app">
     <configuration name="&lt;template&gt;" type="Applet" default="true" selected="false">
       <option name="MAIN_CLASS_NAME" />
       <option name="HTML_FILE_NAME" />
@@ -159,6 +147,24 @@
     </configuration>
     <configuration name="&lt;template&gt;" type="#org.jetbrains.idea.devkit.run.PluginConfigurationType" default="true" selected="false">
       <option name="VM_PARAMETERS" value="-Xmx512m -Xms256m -XX:MaxPermSize=250m -ea" />
+    </configuration>
+    <configuration name="ExampleUnitTest.addition_isCorrect" type="AndroidJUnit" factoryName="Android JUnit" temporary="true" nameIsGenerated="true">
+      <module name="MusicFence.app" />
+      <extension name="coverage">
+        <pattern>
+          <option name="PATTERN" value="com.example.cti.musicfence.*" />
+          <option name="ENABLED" value="true" />
+        </pattern>
+      </extension>
+      <option name="PACKAGE_NAME" value="com.example.cti.musicfence" />
+      <option name="MAIN_CLASS_NAME" value="com.example.cti.musicfence.ExampleUnitTest" />
+      <option name="METHOD_NAME" value="addition_isCorrect" />
+      <option name="TEST_OBJECT" value="method" />
+      <option name="VM_PARAMETERS" />
+      <option name="WORKING_DIRECTORY" value="$MODULE_DIR$" />
+      <method v="2">
+        <option name="Android.Gradle.BeforeRunTask" enabled="true" />
+      </method>
     </configuration>
     <configuration default="true" type="AndroidJUnit" factoryName="Android JUnit">
       <option name="TEST_OBJECT" value="class" />
@@ -382,6 +388,11 @@
         <option name="Make" enabled="true" />
       </method>
     </configuration>
+    <recent_temporary>
+      <list>
+        <item itemvalue="Android JUnit.ExampleUnitTest.addition_isCorrect" />
+      </list>
+    </recent_temporary>
   </component>
   <component name="SvnConfiguration">
     <configuration />
@@ -424,22 +435,26 @@
     </ignored-roots>
   </component>
   <component name="WindowStateProjectService">
-    <state x="429" y="91" key="#Plugins" timestamp="1606879166220">
+    <state x="429" y="91" key="#Plugins" timestamp="1607374746624">
       <screen x="0" y="0" width="1676" height="902" />
     </state>
-    <state x="429" y="91" key="#Plugins/0.0.1676.902@0.0.1676.902" timestamp="1606879166220" />
+    <state x="429" y="91" key="#Plugins/0.0.1676.902@0.0.1676.902" timestamp="1607374746624" />
     <state x="508" y="0" key="#app" timestamp="1606874601007">
       <screen x="0" y="0" width="1676" height="902" />
     </state>
     <state x="508" y="0" key="#app/0.0.1676.902@0.0.1676.902" timestamp="1606874601007" />
-    <state x="628" y="166" key="#com.intellij.ide.util.MemberChooser" timestamp="1606943194572">
+    <state x="628" y="166" key="#com.intellij.ide.util.MemberChooser" timestamp="1607375681558">
       <screen x="0" y="0" width="1676" height="902" />
     </state>
-    <state x="628" y="166" key="#com.intellij.ide.util.MemberChooser/0.0.1676.902@0.0.1676.902" timestamp="1606943194572" />
+    <state x="628" y="166" key="#com.intellij.ide.util.MemberChooser/0.0.1676.902@0.0.1676.902" timestamp="1607375681558" />
     <state x="407" y="372" key="#com.intellij.refactoring.move.MoveHandler.SelectRefactoringDialog" timestamp="1606879353775">
       <screen x="0" y="0" width="1676" height="902" />
     </state>
     <state x="407" y="372" key="#com.intellij.refactoring.move.MoveHandler.SelectRefactoringDialog/0.0.1676.902@0.0.1676.902" timestamp="1606879353775" />
+    <state x="567" y="196" key="#com.intellij.refactoring.safeDelete.UnsafeUsagesDialog" timestamp="1607374928979">
+      <screen x="0" y="0" width="1676" height="902" />
+    </state>
+    <state x="567" y="196" key="#com.intellij.refactoring.safeDelete.UnsafeUsagesDialog/0.0.1676.902@0.0.1676.902" timestamp="1607374928979" />
     <state x="616" y="236" key="#org.jetbrains.kotlin.idea.refactoring.move.moveDeclarations.ui.MoveKotlinTopLevelDeclarationsDialog" timestamp="1606881351149">
       <screen x="0" y="0" width="1676" height="902" />
     </state>
@@ -448,22 +463,22 @@
       <screen x="0" y="0" width="1676" height="902" />
     </state>
     <state x="565" y="147" key="FileChooserDialogImpl/0.0.1676.902@0.0.1676.902" timestamp="1606874816670" />
-    <state width="1630" height="343" key="GridCell.Tab.0.bottom" timestamp="1606968730778">
+    <state width="1630" height="343" key="GridCell.Tab.0.bottom" timestamp="1607377182073">
       <screen x="0" y="0" width="1676" height="902" />
     </state>
-    <state width="1630" height="343" key="GridCell.Tab.0.bottom/0.0.1676.902@0.0.1676.902" timestamp="1606968730778" />
-    <state width="1630" height="343" key="GridCell.Tab.0.center" timestamp="1606968730777">
+    <state width="1630" height="343" key="GridCell.Tab.0.bottom/0.0.1676.902@0.0.1676.902" timestamp="1607377182073" />
+    <state width="1630" height="343" key="GridCell.Tab.0.center" timestamp="1607377182073">
       <screen x="0" y="0" width="1676" height="902" />
     </state>
-    <state width="1630" height="343" key="GridCell.Tab.0.center/0.0.1676.902@0.0.1676.902" timestamp="1606968730777" />
-    <state width="1630" height="343" key="GridCell.Tab.0.left" timestamp="1606968730777">
+    <state width="1630" height="343" key="GridCell.Tab.0.center/0.0.1676.902@0.0.1676.902" timestamp="1607377182073" />
+    <state width="1630" height="343" key="GridCell.Tab.0.left" timestamp="1607377182073">
       <screen x="0" y="0" width="1676" height="902" />
     </state>
-    <state width="1630" height="343" key="GridCell.Tab.0.left/0.0.1676.902@0.0.1676.902" timestamp="1606968730777" />
-    <state width="1630" height="343" key="GridCell.Tab.0.right" timestamp="1606968730777">
+    <state width="1630" height="343" key="GridCell.Tab.0.left/0.0.1676.902@0.0.1676.902" timestamp="1607377182073" />
+    <state width="1630" height="343" key="GridCell.Tab.0.right" timestamp="1607377182073">
       <screen x="0" y="0" width="1676" height="902" />
     </state>
-    <state width="1630" height="343" key="GridCell.Tab.0.right/0.0.1676.902@0.0.1676.902" timestamp="1606968730777" />
+    <state width="1630" height="343" key="GridCell.Tab.0.right/0.0.1676.902@0.0.1676.902" timestamp="1607377182073" />
     <state x="302" y="11" key="SettingsEditor" timestamp="1606941657671">
       <screen x="0" y="0" width="1676" height="902" />
     </state>
@@ -472,5 +487,9 @@
       <screen x="0" y="0" width="1676" height="902" />
     </state>
     <state x="560" y="220" key="refactoring.ChangeSignatureDialog/0.0.1676.902@0.0.1676.902" timestamp="1607150491228" />
+    <state x="500" y="190" width="672" height="678" key="search.everywhere.popup" timestamp="1607374892003">
+      <screen x="0" y="0" width="1676" height="902" />
+    </state>
+    <state x="500" y="190" width="672" height="678" key="search.everywhere.popup/0.0.1676.902@0.0.1676.902" timestamp="1607374892003" />
   </component>
 </project>

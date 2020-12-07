@@ -23,11 +23,11 @@ import androidx.core.content.ContextCompat
 import com.example.cti.musicfence.Model.Musica
 import com.example.cti.musicfence.Model.geoFence
 import com.example.cti.musicfence.R
-import com.example.cti.musicfence.Service.GeoFenceTransitionsIntentService
+import com.example.cti.musicfence.Service.GeofenceBroadcastReceiver
 import com.example.cti.musicfence.Service.Mp3player
 import com.example.cti.musicfence.Service.Mp3player.PlayerBinder
-import com.example.cti.musicfence.Util.calculaDistancia
-import com.example.cti.musicfence.Util.dbFunc
+import com.example.cti.musicfence.Util.calcDistancia
+import com.example.cti.musicfence.Util.databaseFunc
 import com.google.android.gms.common.ConnectionResult
 import com.google.android.gms.common.api.GoogleApiClient
 import com.google.android.gms.common.api.ResultCallback
@@ -61,7 +61,7 @@ class MainActivity : AppCompatActivity(), ServiceConnection, ResultCallback<Stat
         val intentGeofence = Intent(".GeoFenceTransitionsIntentService")
         intentGeofence.setPackage("com.example.cti.")
         startService(intentGeofence)
-        val dbFunc = dbFunc(this)
+        val dbFunc = databaseFunc(this)
         for (g in dbFunc.listar()) {
             val g2 = createGeofence(g)
             val geofencingRequest = geofencingRequest(g2)
@@ -96,7 +96,7 @@ class MainActivity : AppCompatActivity(), ServiceConnection, ResultCallback<Stat
     private fun CriargeoPendingIntent(): PendingIntent {
         Log.d("Criar Pending Intent", "Criado.")
         if (geoPendingIntent != null) return geoPendingIntent
-        val intent = Intent(this, GeoFenceTransitionsIntentService::class.java)
+        val intent = Intent(this, GeofenceBroadcastReceiver::class.java)
         return PendingIntent.getService(this, 0, intent, PendingIntent.FLAG_UPDATE_CURRENT)
     }
 
@@ -213,7 +213,6 @@ class MainActivity : AppCompatActivity(), ServiceConnection, ResultCallback<Stat
     companion object {
         @JvmField
         var seekBar: SeekBar? = null
-        var makeNotificationIntent: Intent? = null
         private var binder: PlayerBinder? = null
         var listaMusic: ArrayList<Musica>? = null
         @JvmField
@@ -223,10 +222,10 @@ class MainActivity : AppCompatActivity(), ServiceConnection, ResultCallback<Stat
         @JvmStatic
         fun entradaGeofence(latLng: LatLng) {
             Log.d("Id Geofence", "entrou em uma geofence")
-            val dbFunc = dbFunc(context)
+            val dbFunc = databaseFunc(context)
             for (geo in dbFunc.listar()) {
                 Log.d(geo.musica, geo.latitude.toString() + " - " + geo.longitude)
-                if (calculaDistancia.distance(latLng.latitude, geo.latitude, latLng.longitude, geo.longitude, 1.0, 1.0) < geo.raio) {
+                if (calcDistancia.distance(latLng.latitude, geo.latitude, latLng.longitude, geo.longitude, 1.0, 1.0) < geo.raio) {
                     val nomeMusica = geo.musica
                     Log.i("Musica Geo", nomeMusica.toString())
                     var index = 0

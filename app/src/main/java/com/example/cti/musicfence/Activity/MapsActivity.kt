@@ -9,7 +9,6 @@ import android.content.pm.PackageManager
 import android.graphics.Color
 import android.location.Location
 import android.location.LocationListener
-import android.location.LocationManager
 import android.os.Bundle
 import android.util.Log
 import android.view.View
@@ -17,14 +16,11 @@ import android.widget.*
 import android.widget.AdapterView.OnItemClickListener
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.app.ActivityCompat
-import androidx.fragment.app.FragmentActivity
 import com.example.cti.musicfence.Model.geoFence
 import com.example.cti.musicfence.R
-import com.example.cti.musicfence.Service.GeoFenceTransitionsIntentService
+import com.example.cti.musicfence.Service.GeofenceBroadcastReceiver
 import com.example.cti.musicfence.Util.LerCoordenadaAtual
-import com.example.cti.musicfence.Util.dbFunc
-import com.google.android.gms.common.ConnectionResult
-import com.google.android.gms.common.api.GoogleApiClient
+import com.example.cti.musicfence.Util.databaseFunc
 import com.google.android.gms.common.api.ResultCallback
 import com.google.android.gms.common.api.Status
 import com.google.android.gms.location.Geofence
@@ -35,77 +31,31 @@ import com.google.android.gms.maps.CameraUpdateFactory
 import com.google.android.gms.maps.GoogleMap
 import com.google.android.gms.maps.MapView
 import com.google.android.gms.maps.OnMapReadyCallback
-import com.google.android.gms.maps.model.BitmapDescriptorFactory
 import com.google.android.gms.maps.model.CircleOptions
 import com.google.android.gms.maps.model.LatLng
 import com.google.android.gms.maps.model.MarkerOptions
 import java.lang.Float
 
-class MapsActivity : AppCompatActivity(), OnMapReadyCallback, GoogleApiClient.ConnectionCallbacks, GoogleApiClient.OnConnectionFailedListener, ResultCallback<Status> {
+class MapsActivity : AppCompatActivity(), OnMapReadyCallback, ResultCallback<Status> {
     private var mMap: GoogleMap? = null
-    private val googleApiClient: GoogleApiClient? = GoogleApiClient.Builder(this)
-            .addConnectionCallbacks(this)
-            .addOnConnectionFailedListener(this)
-            .addApi(LocationServices.API)
-            .build()
-    var func: dbFunc? = null
+    private var func: databaseFunc? = null
     var nomeMusica: String? = null
     private var button: Button? = null
-    private var geofencingClient: GeofencingClient? = null
-    private val duracaoGeofence = (60 * 60 + 1000).toLong()
+    lateinit var geofencingClient: GeofencingClient
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_maps)
         val mapView: MapView = findViewById(R.id.mapView)
+        mapView.onCreate(savedInstanceState)
         mapView.onResume()
         mapView.getMapAsync(this)
-        googleApiClient?.connect()
         val intent = intent
         nomeMusica = intent.getStringExtra("nomeMusica")
         Log.d("Musica", nomeMusica!!)
-        func = dbFunc(this)
         button = findViewById<View>(R.id.bDeleteFence) as Button
         geofencingClient = LocationServices.getGeofencingClient(this)
-    }
-
-    private fun readMyCurrentCoordenadas() {
-        val locationListener = meuLocationListener()
-        val locationManager = getSystemService(LOCATION_SERVICE) as LocationManager
-        val isGPSEnable = locationManager.isProviderEnabled(LocationManager.GPS_PROVIDER)
-        val isNetworkEnabled = locationManager.isProviderEnabled(LocationManager.NETWORK_PROVIDER)
-        var location: Location? = null
-        var latitude = 0.0
-        var longitude = 0.0
-        if (!isGPSEnable && !isNetworkEnabled) {
-            Log.i("Erro", "Necessita de GPS e Internet")
-        } else {
-            if (isNetworkEnabled) {
-
-                locationManager.requestLocationUpdates(LocationManager.NETWORK_PROVIDER, 2000, 0f, locationListener)
-                Log.d("Internet", "Network Ativo")
-                location = locationManager.getLastKnownLocation(LocationManager.NETWORK_PROVIDER)
-                if (location != null) {
-                    latitude = location.latitude
-                    longitude = location.longitude
-                }
-            }
-            if (isGPSEnable) {
-                if (location == null) {
-                    locationManager.requestLocationUpdates(LocationManager.GPS_PROVIDER, 2000, 0f, locationListener)
-                    Log.d("GPS", "GPS Ativo")
-                    location = locationManager.getLastKnownLocation(LocationManager.GPS_PROVIDER)
-                    if (location != null) {
-                        latitude = location.latitude
-                        longitude = location.longitude
-                    }
-                }
-            }
-        }
-        val minhaPos = LatLng(latitude, longitude)
-        mMap!!.addMarker(MarkerOptions().position(minhaPos).title("Sua Posicao")
-                .icon(BitmapDescriptorFactory.defaultMarker(BitmapDescriptorFactory.HUE_BLUE)))
-        mMap!!.moveCamera(CameraUpdateFactory.newLatLngZoom(minhaPos, 15f))
-        Log.i("Posicao", "Lat: $latitude|Long: $longitude")
+        func = databaseFunc(this)
     }
 
     fun callAcessLocation() {
@@ -115,17 +65,6 @@ class MapsActivity : AppCompatActivity(), OnMapReadyCallback, GoogleApiClient.Co
         }
         else
             LerCoordenadaAtual.lerCoordenadas(this, meuLocationListener(),mMap)
-    }
-
-    override fun onStop() {
-        super.onStop()
-        pararConexao()
-    }
-
-    fun pararConexao() {
-        if (googleApiClient!!.isConnected) {
-            googleApiClient.disconnect()
-        }
     }
 
     fun desenhaGeoFence() {
@@ -164,11 +103,10 @@ class MapsActivity : AppCompatActivity(), OnMapReadyCallback, GoogleApiClient.Co
                 Log.d("Longitude do Click", latLng.longitude.toString())
                 Log.d("Raio ", raio[0].toString())
                 Log.d("Musica nome", nomeMusica!!)
-                if (func!!.adicionar(latLng.latitude, latLng.longitude, raio[0], nomeMusica) == true) {
-                    val g = geoFence()
+                if (func!!.adicionar(latLng.latitude, latLng.longitude, raio[0], nomeMusica)) {
                     val geofence = createGeofence(latLng, raio[0])
-                    val geofencingRequest = geofencingRequest(geofence)
-                    addGeo(geofencingRequest)
+                    val geofencingRequest = getGeofencingRequest(geofence)
+                    addGeo(geofencingRequest, geoPendingIntent)
                     Toast.makeText(this@MapsActivity, "Geofence adicionada com sucesso.", Toast.LENGTH_SHORT).show()
                 }
             }
@@ -183,9 +121,6 @@ class MapsActivity : AppCompatActivity(), OnMapReadyCallback, GoogleApiClient.Co
             }
             false
         }
-        //LatLng suaPosicao = new LatLng(latitude, longitude);
-        //mMap.addMarker(new MarkerOptions().position(suaPosicao).title("Sua posicao"));
-        //mMap.moveCamera(CameraUpdateFactory.newLatLng(suaPosicao));
     }
 
     fun deleteFence(latLng: LatLng) {
@@ -199,24 +134,15 @@ class MapsActivity : AppCompatActivity(), OnMapReadyCallback, GoogleApiClient.Co
             Log.d("Criacao", "bem sucedida.")
         }
     }
-
-    // Add a marker in Sydney and move the camera
-    /*LatLng sydney = new LatLng(-34, 151);
-        mMap.addMarker(new MarkerOptions().position(sydney).title("Marker in Sydney"));
-        mMap.moveCamera(CameraUpdateFactory.newLatLng(sydney));*/
     private inner class meuLocationListener : LocationListener {
-        override fun onLocationChanged(location: Location) {}
+        override fun onLocationChanged(location: Location) {
+            Log.e("Location", location.toString())
+        }
         override fun onStatusChanged(s: String, i: Int, bundle: Bundle) {}
         override fun onProviderEnabled(s: String) {}
         override fun onProviderDisabled(s: String) {}
     }
 
-    override fun onConnectionFailed(connectionResult: ConnectionResult) {
-        pararConexao()
-    }
-
-    override fun onConnected(bundle: Bundle?) {}
-    override fun onConnectionSuspended(i: Int) {}
     fun addMarker(point: LatLng?, item: String, musica: String?) {
         if (point != null) {
             mMap!!.addMarker(MarkerOptions().position(LatLng(point.latitude, point.longitude))
@@ -228,15 +154,17 @@ class MapsActivity : AppCompatActivity(), OnMapReadyCallback, GoogleApiClient.Co
                     .fillColor(0x40ff0000)
                     .strokeColor(Color.TRANSPARENT)
                     .strokeWidth(2f)
-            val circle = mMap!!.addCircle(circleOptions)
+            mMap!!.addCircle(circleOptions)
         }
     }
 
     @SuppressLint("MissingPermission")
-    private fun addGeo(request: GeofencingRequest) {
+    private fun addGeo(request: GeofencingRequest, geoPendingIntent: PendingIntent) {
         Log.d("Geo Add: ", "Adicionada.")
-        LocationServices.GeofencingApi.addGeofences(googleApiClient, request, CriargeoPendingIntent()
-        ).setResultCallback(this)
+        geofencingClient?.addGeofences(request, geoPendingIntent)?.run {
+            addOnSuccessListener {  }
+            addOnFailureListener {  }
+        }
     }
 
     private fun createGeofence(latLng: LatLng, radius: Double): Geofence {
@@ -245,25 +173,21 @@ class MapsActivity : AppCompatActivity(), OnMapReadyCallback, GoogleApiClient.Co
         return Geofence.Builder()
                 .setRequestId(g.requestId)
                 .setCircularRegion(latLng.latitude, latLng.longitude, radius.toFloat())
-                .setExpirationDuration(duracaoGeofence)
+                .setExpirationDuration((60 * 60 + 1000).toLong())
                 .setTransitionTypes(Geofence.GEOFENCE_TRANSITION_ENTER or
                         Geofence.GEOFENCE_TRANSITION_EXIT)
                 .build()
     }
 
-    private fun geofencingRequest(geofence: Geofence): GeofencingRequest {
-        Log.d("GeoRequest ", "Request")
-        return GeofencingRequest.Builder()
-                .setInitialTrigger(GeofencingRequest.INITIAL_TRIGGER_ENTER)
-                .addGeofence(geofence)
-                .build()
+    private fun getGeofencingRequest(geofence: Geofence): GeofencingRequest {
+        return GeofencingRequest.Builder().apply {
+            setInitialTrigger(GeofencingRequest.INITIAL_TRIGGER_ENTER)
+            addGeofence(geofence)
+        }.build()
     }
 
-    private val geoPendingIntent: PendingIntent? = null
-    private fun CriargeoPendingIntent(): PendingIntent {
-        Log.d("Criar Pending Intent", "Criado.")
-        if (geoPendingIntent != null) return geoPendingIntent
-        val intent = Intent(this, GeoFenceTransitionsIntentService::class.java)
-        return PendingIntent.getService(this, 0, intent, PendingIntent.FLAG_UPDATE_CURRENT)
+    private val geoPendingIntent: PendingIntent by lazy {
+        val intent = Intent(this, GeofenceBroadcastReceiver::class.java)
+        PendingIntent.getBroadcast(this, 0 , intent, PendingIntent.FLAG_UPDATE_CURRENT)
     }
 }
