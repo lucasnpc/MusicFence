@@ -3,6 +3,7 @@
 
     <uses-permission android:name="android.permission.ACCESS_FINE_LOCATION" />
     <uses-permission android:name="android.permission.ACCESS_COARSE_LOCATION" />
+    <uses-permission android:name="android.permission.ACCESS_BACKGROUND_LOCATION" />
     <uses-permission android:name="android.permission.READ_EXTERNAL_STORAGE" />
     <uses-permission android:name="android.permission.READ_MEDIA_VIDEO" />
     <uses-permission android:name="android.permission.READ_MEDIA_IMAGES" />
@@ -17,7 +18,7 @@
         android:supportsRtl="true"
         android:theme="@style/AppTheme">
         <activity
-            android:name=".Activity.MainActivity"
+            android:name=".activity.MainActivity"
             android:exported="true"
             android:theme="@style/AppTheme">
             <intent-filter>
@@ -28,7 +29,7 @@
         </activity>
 
         <service
-            android:name=".Service.Mp3player"
+            android:name=".service.Mp3player"
             android:enabled="true"
             android:exported="false">
             <intent-filter>
@@ -51,9 +52,9 @@
             android:value="@string/google_maps_key" />
 
         <activity
-            android:name=".Activity.MapsActivity"
+            android:name=".activity.MapsActivity"
             android:exported="true" />
-        <receiver android:name=".Service.GeofenceBroadcastReceiver" />
+        <receiver android:name=".service.GeofenceBroadcastReceiver" />
     </application>
 
 </manifest>

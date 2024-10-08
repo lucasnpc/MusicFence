@@ -1,4 +1,4 @@
-package com.example.cti.musicfence.Interface
+package com.example.cti.musicfence.`interface`
 
 /**
  * Created by Cti on 13/11/2017.
@@ -10,7 +10,7 @@ interface PlayerInterface {
     fun stop()
     operator fun next()
     fun previous()
-    fun playMusic(Index: Int)
+    fun playMusic(index: Int)
     fun getDuration(): Int
     fun getCurrentPosition(): Int
 }

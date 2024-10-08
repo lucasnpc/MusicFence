@@ -1,5 +1,4 @@
-<RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
-    xmlns:tools="http://schemas.android.com/tools"
+<androidx.constraintlayout.widget.ConstraintLayout xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
     android:id="@+id/aba_musicas"
     android:layout_width="match_parent"
@@ -8,47 +7,59 @@
 
     <ListView
         android:id="@+id/lista_musicas"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:layout_above="@+id/layout_botoes_progresso"
+        android:layout_width="match_parent"
+        android:layout_height="0dp"
         android:layout_alignParentTop="true"
         android:choiceMode="singleChoice"
-        android:listSelector="@drawable/bkg" >
-    </ListView>
+        android:listSelector="@drawable/bkg"
+        app:layout_constraintBottom_toTopOf="@id/layout_botoes_progresso"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toTopOf="parent" />
 
-    <RelativeLayout
+    <androidx.constraintlayout.widget.ConstraintLayout
         android:id="@+id/layout_botoes_progresso"
-        android:layout_width="wrap_content"
+        android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:layout_alignParentBottom="true"
+        android:layout_marginTop="5dp"
         android:layout_marginBottom="10dp"
-        android:layout_marginTop="5dp" >
+        app:layout_constraintBottom_toBottomOf="parent"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toStartOf="parent">
 
         <TextView
             android:id="@+id/textView2"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:layout_alignParentLeft="true"
-            android:layout_alignParentRight="true"
+            android:layout_alignParentStart="true"
             android:layout_alignParentTop="true"
-            android:layout_marginBottom="10dp"
+            android:layout_alignParentEnd="true"
             android:layout_marginTop="30dp"
+            android:layout_marginBottom="10dp"
+            android:gravity="center"
             android:maxLength="30"
+            android:textAlignment="center"
             android:textColor="@color/colorPrimary"
             android:textSize="9pt"
-            android:textAlignment="center"
-            android:gravity="center"
-            android:textStyle="italic" />
+            android:textStyle="italic"
+            app:layout_constraintBottom_toTopOf="@id/music_progress"
+            app:layout_constraintEnd_toEndOf="parent"
+            app:layout_constraintStart_toStartOf="parent" />
 
         <SeekBar
             android:id="@+id/music_progress"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:layout_alignParentLeft="true"
+            android:layout_alignParentStart="true"
             android:layout_marginBottom="33dp"
             android:clickable="true"
-            android:layout_above="@+id/textView2"
-            android:onClick="refreshMusic" />
+            android:focusable="true"
+            android:progressTint="@color/colorPrimary"
+            android:onClick="refreshMusic"
+            app:layout_constraintBottom_toTopOf="@id/layout_botoes"
+            app:layout_constraintEnd_toEndOf="parent"
+            app:layout_constraintStart_toStartOf="parent" />
 
         <LinearLayout
             android:id="@+id/layout_botoes"
@@ -56,7 +67,10 @@
             android:layout_height="wrap_content"
             android:layout_below="@+id/textView2"
             android:layout_centerHorizontal="true"
-            android:orientation="horizontal" >
+            android:orientation="horizontal"
+            app:layout_constraintBottom_toBottomOf="parent"
+            app:layout_constraintEnd_toEndOf="parent"
+            app:layout_constraintStart_toStartOf="parent">
 
             <ImageButton
                 android:id="@+id/button_play"
@@ -70,7 +84,7 @@
                 android:id="@+id/button_pause"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:layout_marginLeft="10dp"
+                android:layout_marginStart="10dp"
                 android:background="@android:color/transparent"
                 android:onClick="pauseMusic"
                 android:src="@drawable/pause" />
@@ -79,7 +93,7 @@
                 android:id="@+id/button_stop"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:layout_marginLeft="10dp"
+                android:layout_marginStart="10dp"
                 android:background="@android:color/transparent"
                 android:onClick="stopMusic"
                 android:src="@drawable/stop" />
@@ -88,7 +102,7 @@
                 android:id="@+id/button_previous"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:layout_marginLeft="10dp"
+                android:layout_marginStart="10dp"
                 android:background="@android:color/transparent"
                 android:onClick="previousMusic"
                 android:src="@drawable/backward" />
@@ -97,11 +111,11 @@
                 android:id="@+id/button_next"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:layout_marginLeft="10dp"
+                android:layout_marginStart="10dp"
                 android:background="@android:color/transparent"
                 android:onClick="nextMusic"
                 android:src="@drawable/forward" />
         </LinearLayout>
-    </RelativeLayout>
+    </androidx.constraintlayout.widget.ConstraintLayout>
 
-</RelativeLayout>
+</androidx.constraintlayout.widget.ConstraintLayout>

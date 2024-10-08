@@ -1,4 +1,4 @@
-package com.example.cti.musicfence.Model
+package com.example.cti.musicfence.model
 
 import android.content.Context
 import android.database.sqlite.SQLiteDatabase
@@ -7,7 +7,8 @@ import android.database.sqlite.SQLiteOpenHelper
 /**
  * Created by laboratorio on 29/11/17.
  */
-class dbHelper(context: Context?) : SQLiteOpenHelper(context, DATABASE_NAME, null, DATABASE_VERSION) {
+class DBHelper(context: Context?) :
+    SQLiteOpenHelper(context, DATABASE_NAME, null, DATABASE_VERSION) {
     override fun onCreate(db: SQLiteDatabase) {
         db.execSQL(CREATE_TABLE)
     }

@@ -1,12 +1,11 @@
-package com.example.cti.musicfence.Model
+package com.example.cti.musicfence.model
 
-import android.util.Log
 import com.google.android.gms.location.Geofence
 
 /**
  * Created by laboratorio on 01/12/17.
  */
-class geoFence() : Geofence {
+class GeofenceModel : Geofence {
     var latitude = 0.0
     var longitude = 0.0
     var raio = 0.0

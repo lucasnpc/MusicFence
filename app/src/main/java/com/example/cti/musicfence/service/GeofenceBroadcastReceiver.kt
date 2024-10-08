@@ -1,4 +1,4 @@
-package com.example.cti.musicfence.Service
+package com.example.cti.musicfence.service
 
 import android.content.BroadcastReceiver
 import android.content.Context
@@ -15,25 +15,23 @@ class GeofenceBroadcastReceiver : BroadcastReceiver() {
 
     override fun onReceive(context: Context?, intent: Intent?) {
         val geofenceEvent = GeofencingEvent.fromIntent(intent)
-        if (geofenceEvent.hasError()){
+        if (geofenceEvent.hasError()) {
             val errorMessage = GeofenceStatusCodes.getStatusCodeString(geofenceEvent.errorCode)
             Log.e("Erro geofence", errorMessage)
             return
         }
         val geofenceTransition = geofenceEvent.geofenceTransition
 
-        if (geofenceTransition == Geofence.GEOFENCE_TRANSITION_ENTER || geofenceTransition == Geofence.GEOFENCE_TRANSITION_EXIT)
-        {
+        if (geofenceTransition == Geofence.GEOFENCE_TRANSITION_ENTER || geofenceTransition == Geofence.GEOFENCE_TRANSITION_EXIT) {
             val triggeringGeofences = geofenceEvent.triggeringGeofences
             val geofenceTransitionDetails = getGeofenceTransitionDetails(
-                    this,
-                    geofenceTransition,
-                    triggeringGeofences
+                this,
+                geofenceTransition,
+                triggeringGeofences
             )
             sendNotification(geofenceTransitionDetails)
             Log.e("Detalhes transition", geofenceTransitionDetails)
-        }
-        else
+        } else
             Log.e("Error transition", "Transicao invalida")
     }
 
@@ -41,7 +39,11 @@ class GeofenceBroadcastReceiver : BroadcastReceiver() {
         TODO("Not yet implemented")
     }
 
-    private fun getGeofenceTransitionDetails(receiver: GeofenceBroadcastReceiver, transition: Int, geofences: List<Geofence>): String {
+    private fun getGeofenceTransitionDetails(
+        receiver: GeofenceBroadcastReceiver,
+        transition: Int,
+        geofences: List<Geofence>
+    ): String {
         TODO("Not yet implemented")
     }
 }

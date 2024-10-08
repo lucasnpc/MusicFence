@@ -1,6 +1,5 @@
-package com.example.cti.musicfence.Model
+package com.example.cti.musicfence.model
 
-import android.net.Uri
 import android.os.Parcel
 import android.os.Parcelable
 

@@ -1,4 +1,4 @@
-package com.example.cti.musicfence.Activity
+package com.example.cti.musicfence.activity
 
 import android.Manifest
 import android.annotation.SuppressLint
@@ -16,11 +16,10 @@ import android.widget.*
 import android.widget.AdapterView.OnItemClickListener
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.app.ActivityCompat
-import com.example.cti.musicfence.Model.geoFence
 import com.example.cti.musicfence.R
-import com.example.cti.musicfence.Service.GeofenceBroadcastReceiver
-import com.example.cti.musicfence.Util.LerCoordenadaAtual
-import com.example.cti.musicfence.Util.databaseFunc
+import com.example.cti.musicfence.service.GeofenceBroadcastReceiver
+import com.example.cti.musicfence.util.LerCoordenadaAtual
+import com.example.cti.musicfence.util.DatabaseFunc
 import com.google.android.gms.common.api.ResultCallback
 import com.google.android.gms.common.api.Status
 import com.google.android.gms.location.Geofence
@@ -38,7 +37,7 @@ import java.lang.Float
 
 class MapsActivity : AppCompatActivity(), OnMapReadyCallback, ResultCallback<Status> {
     private var mMap: GoogleMap? = null
-    private var func: databaseFunc? = null
+    private var func: DatabaseFunc? = null
     var nomeMusica: String? = null
     private var button: Button? = null
     lateinit var geofencingClient: GeofencingClient
@@ -55,7 +54,7 @@ class MapsActivity : AppCompatActivity(), OnMapReadyCallback, ResultCallback<Sta
         Log.d("Musica", nomeMusica!!)
         button = findViewById<View>(R.id.bDeleteFence) as Button
         geofencingClient = LocationServices.getGeofencingClient(this)
-        func = databaseFunc(this)
+        func = DatabaseFunc(this)
     }
 
     fun callAcessLocation() {
@@ -167,8 +166,8 @@ class MapsActivity : AppCompatActivity(), OnMapReadyCallback, ResultCallback<Sta
         }
     }
 
-    private fun createGeofence(latLng: LatLng, radius: Double): Geofence {
-        val g = geoFence()
+    private fun createGeofence(latLng: LatLng, radius: Double): com.google.android.gms.location.Geofence {
+        val g = com.example.cti.musicfence.model.GeofenceModel()
         Log.d("Criar geofence", "Criada.")
         return Geofence.Builder()
                 .setRequestId(g.requestId)
@@ -179,7 +178,7 @@ class MapsActivity : AppCompatActivity(), OnMapReadyCallback, ResultCallback<Sta
                 .build()
     }
 
-    private fun getGeofencingRequest(geofence: Geofence): GeofencingRequest {
+    private fun getGeofencingRequest(geofence: com.google.android.gms.location.Geofence): GeofencingRequest {
         return GeofencingRequest.Builder().apply {
             setInitialTrigger(GeofencingRequest.INITIAL_TRIGGER_ENTER)
             addGeofence(geofence)
