@@ -3,7 +3,7 @@ apply plugin: 'org.jetbrains.kotlin.android'
 
 android {
     namespace 'com.example.cti.musicfence'
-    compileSdkVersion 34
+    compileSdk 34
     defaultConfig {
         applicationId "com.example.cti.musicfence"
         minSdkVersion 21
@@ -23,6 +23,10 @@ android {
     compileOptions {
         sourceCompatibility JavaVersion.VERSION_17
         targetCompatibility JavaVersion.VERSION_17
+    }
+
+    buildFeatures {
+        viewBinding true
     }
 
     kotlinOptions {

@@ -3,32 +3,33 @@ package com.example.cti.musicfence.activity
 import android.annotation.SuppressLint
 import android.app.PendingIntent
 import android.content.ComponentName
-import android.content.Context
 import android.content.Intent
 import android.content.ServiceConnection
 import android.content.pm.PackageManager
 import android.os.Build
 import android.os.Bundle
 import android.os.IBinder
-import android.provider.MediaStore
 import android.util.Log
-import android.view.View
 import android.widget.AdapterView.OnItemClickListener
 import android.widget.AdapterView.OnItemLongClickListener
 import android.widget.ArrayAdapter
-import android.widget.ListView
 import android.widget.SeekBar
 import android.widget.TextView
 import androidx.appcompat.app.AppCompatActivity
 import com.example.cti.musicfence.R
+import com.example.cti.musicfence.activity.utils.getAllMusics
 import com.example.cti.musicfence.activity.utils.handlePermissionAboveApi33
 import com.example.cti.musicfence.activity.utils.handlePermissionBeforeApi33
-import com.example.cti.musicfence.model.Musica
+import com.example.cti.musicfence.databinding.ActivityInicioBinding
 import com.example.cti.musicfence.service.GeofenceBroadcastReceiver
 import com.example.cti.musicfence.service.Mp3player
 import com.example.cti.musicfence.service.Mp3player.PlayerBinder
 import com.example.cti.musicfence.util.CalcDistancia
 import com.example.cti.musicfence.util.DatabaseFunc
+import com.example.cti.musicfence.util.MusicPlayer.mediaPlayer
+import com.example.cti.musicfence.util.MusicPlayer.musicaAtual
+import com.example.cti.musicfence.util.MusicPlayer.playlist
+import com.example.cti.musicfence.util.MusicPlayer.seekBar
 import com.google.android.gms.common.ConnectionResult
 import com.google.android.gms.common.api.GoogleApiClient
 import com.google.android.gms.common.api.ResultCallback
@@ -41,18 +42,26 @@ import com.google.android.gms.maps.model.LatLng
 
 class MainActivity : AppCompatActivity(), ServiceConnection, ResultCallback<Status>,
     GoogleApiClient.ConnectionCallbacks, GoogleApiClient.OnConnectionFailedListener {
+
+    private val binding: ActivityInicioBinding by lazy {
+        ActivityInicioBinding.inflate(layoutInflater)
+    }
+
+    private var binder: PlayerBinder? = null
+
     private var conexao: ServiceConnection? = null
-    private var listaViewMusicas: ListView? = null
     private val duracaoGeofence = 60 * 60 + 1000.toLong()
-    private var geofencingClient: GeofencingClient? =
-        context?.let { LocationServices.getGeofencingClient(it) }
+    private val geofencingClient: GeofencingClient by lazy {
+        LocationServices.getGeofencingClient(
+            this
+        )
+    }
 
     @SuppressLint("MissingPermission")
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        setContentView(R.layout.activity_inicio)
-        seekBar = findViewById(R.id.music_progress)
-        listaViewMusicas = findViewById<View>(R.id.lista_musicas) as ListView
+        setContentView(binding.root)
+        setClickListeners()
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
             handlePermissionAboveApi33 {
                 configurarLista()
@@ -63,7 +72,8 @@ class MainActivity : AppCompatActivity(), ServiceConnection, ResultCallback<Stat
             }
         }
 
-        musicaAtual = findViewById<View>(R.id.textView2) as TextView
+        musicaAtual = binding.textView2
+        seekBar = binding.musicProgress
         val intentGeofence = Intent(".GeoFenceTransitionsIntentService")
         intentGeofence.setPackage("com.example.cti.")
         startService(intentGeofence)
@@ -91,7 +101,7 @@ class MainActivity : AppCompatActivity(), ServiceConnection, ResultCallback<Stat
         }
     }
 
-    private fun createGeofence(g: com.example.cti.musicfence.model.GeofenceModel): com.google.android.gms.location.Geofence {
+    private fun createGeofence(g: com.example.cti.musicfence.model.GeofenceModel): Geofence {
         Log.d("Criar geofence", "Criada.")
         return Geofence.Builder()
             .setRequestId("0")
@@ -113,7 +123,7 @@ class MainActivity : AppCompatActivity(), ServiceConnection, ResultCallback<Stat
         return PendingIntent.getService(this, 0, intent, PendingIntent.FLAG_UPDATE_CURRENT)
     }
 
-    private fun geofencingRequest(geofence: com.google.android.gms.location.Geofence): GeofencingRequest {
+    private fun geofencingRequest(geofence: Geofence): GeofencingRequest {
         Log.d("GeoRequest ", "Request")
         return GeofencingRequest.Builder()
             .setInitialTrigger(GeofencingRequest.INITIAL_TRIGGER_ENTER)
@@ -122,27 +132,32 @@ class MainActivity : AppCompatActivity(), ServiceConnection, ResultCallback<Stat
     }
 
     private fun configurarLista() {
-        listaMusic = allMusic
+        playlist = getAllMusics()
         val intentService =
             Intent("com.example.cti.musicfence.SERVICE_PLAYER_2").putParcelableArrayListExtra(
                 "listaMusicas",
-                listaMusic
+                playlist
             )
         intentService.setPackage("com.example.cti.")
         startService(intentService)
-        val adapter = ArrayAdapter(this, R.layout.lista_titulo_sumario_texto, listaMusic!!)
-        listaViewMusicas!!.adapter = adapter
-        listaViewMusicas!!.onItemClickListener =
-            OnItemClickListener { parent, view, position, id -> binder!!.playMusic(position) }
-        listaViewMusicas!!.onItemLongClickListener =
-            OnItemLongClickListener { adapterView, view, i, l ->
-                val intent = Intent(this@MainActivity, MapsActivity::class.java)
-                intent.putExtra("nomeMusica", (view as TextView).text.toString())
-                startActivity(intent)
-                false
-            }
+        binding.listaMusicas.apply {
+            adapter = ArrayAdapter(
+                this@MainActivity,
+                R.layout.lista_titulo_sumario_texto,
+                playlist
+            )
+            onItemClickListener =
+                OnItemClickListener { parent, view, position, id -> binder?.playMusic(position) }
+            onItemLongClickListener =
+                OnItemLongClickListener { adapterView, view, i, l ->
+                    val intent = Intent(this@MainActivity, MapsActivity::class.java)
+                    intent.putExtra("nomeMusica", (view as TextView).text.toString())
+                    startActivity(intent)
+                    false
+                }
+        }
         conexao = this
-        if (binder == null || !binder!!.isBinderAlive) {
+        if (binder == null || binder?.isBinderAlive == false) {
             val intentPlayer = Intent(this, Mp3player::class.java)
             bindService(intentPlayer, conexao as MainActivity, BIND_AUTO_CREATE)
             startService(intentPlayer)
@@ -159,33 +174,58 @@ class MainActivity : AppCompatActivity(), ServiceConnection, ResultCallback<Stat
         stopService(intentGeofence)
     }
 
-    fun playMusic(view: View?) {
+    private fun setClickListeners() {
+        binding.run {
+            buttonPlay.setOnClickListener { playMusic() }
+            buttonPause.setOnClickListener { pauseMusic() }
+            buttonStop.setOnClickListener { stopMusic() }
+            buttonNext.setOnClickListener { nextMusic() }
+            buttonPrevious.setOnClickListener { previousMusic() }
+            musicProgress.setOnSeekBarChangeListener(object :
+                SeekBar.OnSeekBarChangeListener {
+                override fun onStopTrackingTouch(seekBar: SeekBar) {
+                    mediaPlayer.seekTo(musicProgress.progress)
+                    mediaPlayer.start()
+                }
+
+                override fun onStartTrackingTouch(seekBar: SeekBar) {}
+                override fun onProgressChanged(
+                    seekBar: SeekBar, progress: Int,
+                    fromUser: Boolean
+                ) {
+                    if (fromUser) {
+                        mediaPlayer.seekTo(progress)
+                    }
+                }
+            })
+        }
+    }
+
+    private fun playMusic() {
         binder?.play()
     }
 
-    fun pauseMusic(view: View?) {
+    private fun pauseMusic() {
         binder?.pause()
     }
 
-    fun stopMusic(view: View?) {
+    private fun stopMusic() {
         binder?.stop()
     }
 
-    fun nextMusic(view: View?) {
+    private fun nextMusic() {
         binder?.next()
     }
 
-    fun previousMusic(view: View?) {
+    private fun previousMusic() {
         binder?.previous()
     }
 
     override fun onServiceConnected(name: ComponentName, service: IBinder) {
         binder = service as PlayerBinder
-        //this.musicas.setText(binder.getPath());
-        Mp3player.playlist = listaMusic
         try {
-            seekBar!!.max = binder!!.getDuration()
-            seekBar!!.progress = binder!!.getCurrentPosition()
+            binding.musicProgress.max = binder?.getDuration() ?: 0
+            binding.musicProgress.progress = binder?.getCurrentPosition() ?: 0
         } catch (e: Exception) {
             e.printStackTrace()
             return
@@ -195,33 +235,6 @@ class MainActivity : AppCompatActivity(), ServiceConnection, ResultCallback<Stat
     override fun onServiceDisconnected(name: ComponentName) {
         binder = null
     }
-
-    private val allMusic: ArrayList<Musica>
-        get() {
-            val selection = MediaStore.Audio.Media.IS_MUSIC + "!= 0"
-            val projection = arrayOf(
-                MediaStore.Audio.Media._ID,
-                MediaStore.Audio.Media.ARTIST,
-                MediaStore.Audio.Media.TITLE,
-                MediaStore.Audio.Media.DATA,
-                MediaStore.Audio.Media.DISPLAY_NAME,
-                MediaStore.Audio.Media.DURATION
-            )
-            val cursor = contentResolver.query(
-                MediaStore.Audio.Media.EXTERNAL_CONTENT_URI, projection, selection,
-                null,
-                null
-            )
-            val songs = ArrayList<Musica>()
-            if (cursor != null) while (cursor.moveToNext()) {
-                val musica = Musica(
-                    cursor.getInt(0), cursor.getString(1), cursor.getString(2),
-                    cursor.getString(3), cursor.getString(4), cursor.getInt(5)
-                )
-                songs.add(musica)
-            }
-            return songs
-        }
 
     override fun onResult(status: Status) {
         if (status.isSuccess) Log.e("Tag", "O sistema esta monitorando") else Log.e(
@@ -234,46 +247,34 @@ class MainActivity : AppCompatActivity(), ServiceConnection, ResultCallback<Stat
     override fun onConnectionSuspended(i: Int) {}
     override fun onConnectionFailed(connectionResult: ConnectionResult) {}
 
-    companion object {
-        @JvmField
-        var seekBar: SeekBar? = null
-        private var binder: PlayerBinder? = null
-        var listaMusic: ArrayList<Musica>? = null
-
-        @JvmField
-        var musicaAtual: TextView? = null
-        private val context: Context? = null
-        const val MY_PERMISSIONS_READ_EXTERNAL_STORAGE = 1
-
-        @JvmStatic
-        fun entradaGeofence(latLng: LatLng) {
-            Log.d("Id Geofence", "entrou em uma geofence")
-            val dbFunc = DatabaseFunc(context)
-            for (geo in dbFunc.listar()) {
-                Log.d(geo.musica, geo.latitude.toString() + " - " + geo.longitude)
-                if (CalcDistancia.distance(
-                        latLng.latitude,
-                        geo.latitude,
-                        latLng.longitude,
-                        geo.longitude,
-                        1.0,
-                        1.0
-                    ) < geo.raio
-                ) {
-                    val nomeMusica = geo.musica
-                    Log.i("Musica Geo", nomeMusica.toString())
-                    var index = 0
-                    for (m in listaMusic!!) {
-                        if (m.titulo!!.contains(nomeMusica.toString())) {
-                            Log.d("teste", "Play music")
-                            binder!!.playMusic(index)
-                            binder!!.play()
-                        }
-                        index++
+    fun entradaGeofence(latLng: LatLng) {
+        Log.d("Id Geofence", "entrou em uma geofence")
+        val dbFunc = DatabaseFunc(this)
+        for (geo in dbFunc.listar()) {
+            Log.d(geo.musica, geo.latitude.toString() + " - " + geo.longitude)
+            if (CalcDistancia.distance(
+                    latLng.latitude,
+                    geo.latitude,
+                    latLng.longitude,
+                    geo.longitude,
+                    1.0,
+                    1.0
+                ) < geo.raio
+            ) {
+                val nomeMusica = geo.musica
+                Log.i("Musica Geo", nomeMusica.toString())
+                for ((index, i) in playlist.indices.withIndex()) {
+                    if (playlist[i].titulo?.contains(nomeMusica.toString()) == true) {
+                        Log.d("teste", "Play music")
+                        binder?.playMusic(index)
+                        binder?.play()
                     }
                 }
             }
         }
+    }
 
+    companion object {
+        const val MY_PERMISSIONS_READ_EXTERNAL_STORAGE = 1
     }
 }
