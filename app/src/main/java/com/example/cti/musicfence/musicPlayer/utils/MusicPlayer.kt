@@ -1,9 +1,9 @@
-package com.example.cti.musicfence.util
+package com.example.cti.musicfence.musicPlayer.utils
 
 import android.media.MediaPlayer
 import android.widget.SeekBar
 import android.widget.TextView
-import com.example.cti.musicfence.model.Musica
+import com.example.cti.musicfence.musicPlayer.model.Music
 
 object MusicPlayer {
 
@@ -11,7 +11,7 @@ object MusicPlayer {
         MediaPlayer()
     }
 
-    var playlist: ArrayList<Musica> = arrayListOf()
+    var playlist: ArrayList<Music> = arrayListOf()
 
     var musicIndex = 0
 

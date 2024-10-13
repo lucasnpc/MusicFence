@@ -9,7 +9,7 @@ import androidx.annotation.RequiresApi
 import androidx.core.app.ActivityCompat
 import androidx.core.content.ContextCompat
 import com.example.cti.musicfence.activity.MainActivity.Companion.MY_PERMISSIONS_READ_EXTERNAL_STORAGE
-import com.example.cti.musicfence.model.Musica
+import com.example.cti.musicfence.musicPlayer.model.Music
 
 @RequiresApi(Build.VERSION_CODES.TIRAMISU)
 inline fun Activity.handlePermissionAboveApi33(action: () -> Unit) {
@@ -62,7 +62,7 @@ fun Activity.handlePermissionBeforeApi33(action: () -> Unit) {
     }
 }
 
-fun Activity.getAllMusics(): ArrayList<Musica> {
+fun Activity.getAllMusics(): ArrayList<Music> {
     val selection = MediaStore.Audio.Media.IS_MUSIC + "!= 0"
     val projection = arrayOf(
         MediaStore.Audio.Media._ID,
@@ -77,13 +77,14 @@ fun Activity.getAllMusics(): ArrayList<Musica> {
         null,
         null
     )
-    val songs = ArrayList<Musica>()
+    val songs = ArrayList<Music>()
     if (cursor != null) while (cursor.moveToNext()) {
-        val musica = Musica(
+        val music = Music(
             cursor.getInt(0), cursor.getString(1), cursor.getString(2),
             cursor.getString(3), cursor.getString(4), cursor.getInt(5)
         )
-        songs.add(musica)
+        songs.add(music)
     }
+    cursor?.close()
     return songs
 }

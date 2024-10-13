@@ -10,8 +10,6 @@ import android.os.Build
 import android.os.Bundle
 import android.os.IBinder
 import android.util.Log
-import android.widget.AdapterView.OnItemClickListener
-import android.widget.AdapterView.OnItemLongClickListener
 import android.widget.ArrayAdapter
 import android.widget.SeekBar
 import android.widget.TextView
@@ -21,15 +19,15 @@ import com.example.cti.musicfence.activity.utils.getAllMusics
 import com.example.cti.musicfence.activity.utils.handlePermissionAboveApi33
 import com.example.cti.musicfence.activity.utils.handlePermissionBeforeApi33
 import com.example.cti.musicfence.databinding.ActivityInicioBinding
+import com.example.cti.musicfence.musicPlayer.service.Mp3player
+import com.example.cti.musicfence.musicPlayer.service.Mp3player.PlayerBinder
+import com.example.cti.musicfence.musicPlayer.utils.MusicPlayer.mediaPlayer
+import com.example.cti.musicfence.musicPlayer.utils.MusicPlayer.musicaAtual
+import com.example.cti.musicfence.musicPlayer.utils.MusicPlayer.playlist
+import com.example.cti.musicfence.musicPlayer.utils.MusicPlayer.seekBar
 import com.example.cti.musicfence.service.GeofenceBroadcastReceiver
-import com.example.cti.musicfence.service.Mp3player
-import com.example.cti.musicfence.service.Mp3player.PlayerBinder
 import com.example.cti.musicfence.util.CalcDistancia
 import com.example.cti.musicfence.util.DatabaseFunc
-import com.example.cti.musicfence.util.MusicPlayer.mediaPlayer
-import com.example.cti.musicfence.util.MusicPlayer.musicaAtual
-import com.example.cti.musicfence.util.MusicPlayer.playlist
-import com.example.cti.musicfence.util.MusicPlayer.seekBar
 import com.google.android.gms.common.ConnectionResult
 import com.google.android.gms.common.api.GoogleApiClient
 import com.google.android.gms.common.api.ResultCallback
@@ -64,15 +62,15 @@ class MainActivity : AppCompatActivity(), ServiceConnection, ResultCallback<Stat
         setClickListeners()
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
             handlePermissionAboveApi33 {
-                configurarLista()
+                setupPlayList()
             }
         } else {
             handlePermissionBeforeApi33 {
-                configurarLista()
+                setupPlayList()
             }
         }
 
-        musicaAtual = binding.textView2
+        musicaAtual = binding.currentMusicPlaying
         seekBar = binding.musicProgress
         val intentGeofence = Intent(".GeoFenceTransitionsIntentService")
         intentGeofence.setPackage("com.example.cti.")
@@ -95,7 +93,7 @@ class MainActivity : AppCompatActivity(), ServiceConnection, ResultCallback<Stat
         when (requestCode) {
             MY_PERMISSIONS_READ_EXTERNAL_STORAGE -> {
                 if (grantResults.isNotEmpty() && grantResults[0] == PackageManager.PERMISSION_GRANTED) {
-                    configurarLista()
+                    setupPlayList()
                 }
             }
         }
@@ -131,30 +129,27 @@ class MainActivity : AppCompatActivity(), ServiceConnection, ResultCallback<Stat
             .build()
     }
 
-    private fun configurarLista() {
+    private fun setupPlayList() {
         playlist = getAllMusics()
-        val intentService =
-            Intent("com.example.cti.musicfence.SERVICE_PLAYER_2").putParcelableArrayListExtra(
-                "listaMusicas",
-                playlist
-            )
+        val intentService = Intent("com.example.cti.musicfence.SERVICE_PLAYER_2")
         intentService.setPackage("com.example.cti.")
         startService(intentService)
         binding.listaMusicas.apply {
             adapter = ArrayAdapter(
                 this@MainActivity,
                 R.layout.lista_titulo_sumario_texto,
-                playlist
+                playlist.map { it.title }
             )
-            onItemClickListener =
-                OnItemClickListener { parent, view, position, id -> binder?.playMusic(position) }
-            onItemLongClickListener =
-                OnItemLongClickListener { adapterView, view, i, l ->
-                    val intent = Intent(this@MainActivity, MapsActivity::class.java)
-                    intent.putExtra("nomeMusica", (view as TextView).text.toString())
-                    startActivity(intent)
-                    false
-                }
+            setOnItemClickListener { _, _, position, _ ->
+                binder?.playMusic(position)
+
+            }
+            setOnItemLongClickListener { _, view, _, _ ->
+                val intent = Intent(this@MainActivity, MapsActivity::class.java)
+                intent.putExtra("nomeMusica", (view as TextView).text.toString())
+                startActivity(intent)
+                false
+            }
         }
         conexao = this
         if (binder == null || binder?.isBinderAlive == false) {
@@ -264,7 +259,7 @@ class MainActivity : AppCompatActivity(), ServiceConnection, ResultCallback<Stat
                 val nomeMusica = geo.musica
                 Log.i("Musica Geo", nomeMusica.toString())
                 for ((index, i) in playlist.indices.withIndex()) {
-                    if (playlist[i].titulo?.contains(nomeMusica.toString()) == true) {
+                    if (playlist[i].title?.contains(nomeMusica.toString()) == true) {
                         Log.d("teste", "Play music")
                         binder?.playMusic(index)
                         binder?.play()

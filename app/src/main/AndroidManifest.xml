@@ -29,7 +29,7 @@
         </activity>
 
         <service
-            android:name=".service.Mp3player"
+            android:name=".musicPlayer.service.Mp3player"
             android:enabled="true"
             android:exported="false">
             <intent-filter>

@@ -1,4 +1,4 @@
-package com.example.cti.musicfence.`interface`
+package com.example.cti.musicfence.musicPlayer.`interface`
 
 /**
  * Created by Cti on 13/11/2017.

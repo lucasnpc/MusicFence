@@ -10,7 +10,6 @@ import android.util.Log
 import androidx.appcompat.app.AppCompatActivity
 import com.example.cti.musicfence.model.DBGateway
 import com.example.cti.musicfence.model.GeofenceModel
-import com.example.cti.musicfence.model.Musica
 import com.google.android.gms.maps.CameraUpdateFactory
 import com.google.android.gms.maps.GoogleMap
 import com.google.android.gms.maps.model.BitmapDescriptorFactory
@@ -81,19 +80,19 @@ class DatabaseFunc(context: Context?) {
         return GeofenceModels
     }
 
-    @SuppressLint("Recycle")
-    fun retornaMusicFence(latLng: LatLng): String {
-        val cursor = gateway.database.rawQuery(
-            "SELECT * FROM geoFence WHERE latitude=" +
-                    latLng.latitude + " and longitude=" + latLng.longitude,
-            null
-        )
-        val musica = Musica()
-        while (cursor.moveToNext()) {
-            musica.titulo = cursor.getString(cursor.getColumnIndex("music"))
-        }
-        return musica.titulo.toString()
-    }
+//    @SuppressLint("Recycle")
+//    fun retornaMusicFence(latLng: LatLng): String {
+//        val cursor = gateway.database.rawQuery(
+//            "SELECT * FROM geoFence WHERE latitude=" +
+//                    latLng.latitude + " and longitude=" + latLng.longitude,
+//            null
+//        )
+//        val music = Music()
+//        while (cursor.moveToNext()) {
+//            music.title = cursor.getString(cursor.getColumnIndex("music"))
+//        }
+//        return music.title.toString()
+//    }
 
 }
 
