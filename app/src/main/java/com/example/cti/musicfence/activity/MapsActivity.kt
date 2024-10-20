@@ -12,7 +12,6 @@ import android.location.LocationListener
 import android.os.Bundle
 import android.util.Log
 import android.view.View
-import android.widget.AdapterView.OnItemClickListener
 import android.widget.ArrayAdapter
 import android.widget.Button
 import android.widget.ListView
@@ -21,6 +20,7 @@ import android.widget.Toast
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.app.ActivityCompat
 import com.example.cti.musicfence.R
+import com.example.cti.musicfence.model.GeofenceModel
 import com.example.cti.musicfence.service.GeofenceBroadcastReceiver
 import com.example.cti.musicfence.util.DatabaseFunc
 import com.example.cti.musicfence.util.LerCoordenadaAtual
@@ -37,20 +37,13 @@ import com.google.android.gms.maps.OnMapReadyCallback
 import com.google.android.gms.maps.model.CircleOptions
 import com.google.android.gms.maps.model.LatLng
 import com.google.android.gms.maps.model.MarkerOptions
-import java.lang.Float
-import kotlin.Double
-import kotlin.DoubleArray
-import kotlin.Int
-import kotlin.String
-import kotlin.apply
-import kotlin.arrayOf
-import kotlin.getValue
-import kotlin.lazy
-import kotlin.run
+import java.util.UUID
 
 class MapsActivity : AppCompatActivity(), OnMapReadyCallback, ResultCallback<Status> {
     private var mMap: GoogleMap? = null
-    private var func: DatabaseFunc? = null
+    private val func: DatabaseFunc by lazy {
+        DatabaseFunc(this)
+    }
     private var nomeMusica: String? = null
     private var button: Button? = null
     private lateinit var geofencingClient: GeofencingClient
@@ -67,7 +60,6 @@ class MapsActivity : AppCompatActivity(), OnMapReadyCallback, ResultCallback<Sta
         Log.d("Musica", nomeMusica!!)
         button = findViewById<View>(R.id.bDeleteFence) as Button
         geofencingClient = LocationServices.getGeofencingClient(this)
-        func = DatabaseFunc(this)
     }
 
     private fun callAcessLocation() {
@@ -87,11 +79,8 @@ class MapsActivity : AppCompatActivity(), OnMapReadyCallback, ResultCallback<Sta
     }
 
     private fun desenhaGeoFence() {
-        for (g in func!!.listar()) {
-            val latLng = LatLng(g.latitude, g.longitude)
-            val item = g.raio.toString()
-            val music = g.musica
-            addMarker(latLng, item, music)
+        for (g in func.listar()) {
+            addMarker(LatLng(g.latitude, g.longitude), g.radius, g.musicName)
         }
     }
 
@@ -101,8 +90,8 @@ class MapsActivity : AppCompatActivity(), OnMapReadyCallback, ResultCallback<Sta
         desenhaGeoFence()
         mMap!!.setOnMapLongClickListener { latLng ->
             mMap!!.moveCamera(CameraUpdateFactory.newLatLngZoom(latLng, 15f))
-            val names = arrayOf("50", "100", "200", "500")
-            val raio = DoubleArray(1)
+            val geofenceRadiusOptions = arrayOf(50f, 100f, 200f, 500f)
+            val raio = FloatArray(1)
             val alertDialog = AlertDialog.Builder(this@MapsActivity)
                 .create()
             val layoutInflater = layoutInflater
@@ -111,19 +100,26 @@ class MapsActivity : AppCompatActivity(), OnMapReadyCallback, ResultCallback<Sta
             alertDialog.setTitle("Selecione o Raio")
             val listView = convertView.findViewById<View>(R.id.listView1) as ListView
             val adapter =
-                ArrayAdapter(this@MapsActivity, android.R.layout.simple_list_item_1, names)
+                ArrayAdapter(
+                    this@MapsActivity,
+                    android.R.layout.simple_list_item_1,
+                    geofenceRadiusOptions
+                )
             listView.adapter = adapter
             alertDialog.show()
-            listView.onItemClickListener = OnItemClickListener { adapterView, view, i, l ->
-                val item = (view as TextView).text.toString()
-                addMarker(latLng, item, nomeMusica)
-                raio[0] = item.toDouble()
+            listView.setOnItemClickListener { parent, view, position, id ->
+                view as TextView
+                val radius = view.text.toString().toFloat()
+                addMarker(latLng, radius, nomeMusica)
+                raio[0] = radius
                 alertDialog.dismiss()
-                Log.d("Latitude do Click", latLng.latitude.toString())
-                Log.d("Longitude do Click", latLng.longitude.toString())
-                Log.d("Raio ", raio[0].toString())
-                Log.d("Musica nome", nomeMusica!!)
-                if (func!!.adicionar(latLng.latitude, latLng.longitude, raio[0], nomeMusica)) {
+                if (func.adicionar(
+                        latLng.latitude,
+                        latLng.longitude,
+                        raio[0],
+                        nomeMusica
+                    )
+                ) {
                     val geofence = createGeofence(latLng, raio[0])
                     val geofencingRequest = getGeofencingRequest(geofence)
                     addGeo(geofencingRequest, geoPendingIntent)
@@ -148,7 +144,7 @@ class MapsActivity : AppCompatActivity(), OnMapReadyCallback, ResultCallback<Sta
     }
 
     private fun deleteFence(latLng: LatLng) {
-        func!!.remover(latLng.latitude, latLng.longitude)
+        func.remover(latLng.latitude, latLng.longitude)
         Toast.makeText(this, "GeoFence removida com sucesso.", Toast.LENGTH_SHORT).show()
     }
 
@@ -169,16 +165,16 @@ class MapsActivity : AppCompatActivity(), OnMapReadyCallback, ResultCallback<Sta
         override fun onProviderDisabled(s: String) {}
     }
 
-    private fun addMarker(point: LatLng?, item: String, musica: String?) {
+    private fun addMarker(point: LatLng?, radius: Float, musicName: String?) {
         if (point != null) {
             mMap!!.addMarker(
                 MarkerOptions().position(LatLng(point.latitude, point.longitude))
-                    .title("Geofence $musica")
-                    .snippet("Raio $item")
+                    .title("Geofence $musicName")
+                    .snippet("Raio $radius")
             )
             val circleOptions = CircleOptions()
                 .center(LatLng(point.latitude, point.longitude))
-                .radius(Float.valueOf(item).toDouble())
+                .radius(radius.toDouble())
                 .fillColor(0x40ff0000)
                 .strokeColor(Color.TRANSPARENT)
                 .strokeWidth(2f)
@@ -189,24 +185,18 @@ class MapsActivity : AppCompatActivity(), OnMapReadyCallback, ResultCallback<Sta
     @SuppressLint("MissingPermission")
     private fun addGeo(request: GeofencingRequest, geoPendingIntent: PendingIntent) {
         Log.d("Geo Add: ", "Adicionada.")
-        geofencingClient.addGeofences(request, geoPendingIntent)?.run {
+        geofencingClient.addGeofences(request, geoPendingIntent).run {
             addOnSuccessListener { }
             addOnFailureListener { }
         }
     }
 
-    private fun createGeofence(latLng: LatLng, radius: Double): Geofence {
-        val g = com.example.cti.musicfence.model.GeofenceModel()
-        Log.d("Criar geofence", "Criada.")
-        return Geofence.Builder()
-            .setRequestId(g.requestId)
-            .setCircularRegion(latLng.latitude, latLng.longitude, radius.toFloat())
-            .setExpirationDuration((60 * 60 + 1000).toLong())
-            .setTransitionTypes(
-                Geofence.GEOFENCE_TRANSITION_ENTER or
-                        Geofence.GEOFENCE_TRANSITION_EXIT
-            )
-            .build()
+    private fun createGeofence(latLng: LatLng, radius: Float): Geofence {
+        return GeofenceModel(
+            latitude = latLng.latitude,
+            longitude = latLng.longitude,
+            radius = radius,
+        )
     }
 
     private fun getGeofencingRequest(geofence: Geofence): GeofencingRequest {

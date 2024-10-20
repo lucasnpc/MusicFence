@@ -14,25 +14,27 @@ import com.google.android.gms.location.GeofencingEvent
 class GeofenceBroadcastReceiver : BroadcastReceiver() {
 
     override fun onReceive(context: Context?, intent: Intent?) {
-        val geofenceEvent = GeofencingEvent.fromIntent(intent)
-        if (geofenceEvent.hasError()) {
-            val errorMessage = GeofenceStatusCodes.getStatusCodeString(geofenceEvent.errorCode)
-            Log.e("Erro geofence", errorMessage)
-            return
-        }
-        val geofenceTransition = geofenceEvent.geofenceTransition
+        intent?.let {
+            val geofenceEvent = GeofencingEvent.fromIntent(intent)
+            if (geofenceEvent?.hasError() == true) {
+                val errorMessage = GeofenceStatusCodes.getStatusCodeString(geofenceEvent.errorCode)
+                Log.e("Erro geofence", errorMessage)
+                return
+            }
+            val geofenceTransition = geofenceEvent?.geofenceTransition
 
-        if (geofenceTransition == Geofence.GEOFENCE_TRANSITION_ENTER || geofenceTransition == Geofence.GEOFENCE_TRANSITION_EXIT) {
-            val triggeringGeofences = geofenceEvent.triggeringGeofences
-            val geofenceTransitionDetails = getGeofenceTransitionDetails(
-                this,
-                geofenceTransition,
-                triggeringGeofences
-            )
-            sendNotification(geofenceTransitionDetails)
-            Log.e("Detalhes transition", geofenceTransitionDetails)
-        } else
-            Log.e("Error transition", "Transicao invalida")
+            if (geofenceTransition == Geofence.GEOFENCE_TRANSITION_ENTER || geofenceTransition == Geofence.GEOFENCE_TRANSITION_EXIT) {
+                val triggeringGeofences = geofenceEvent.triggeringGeofences
+                val geofenceTransitionDetails = getGeofenceTransitionDetails(
+                    this,
+                    geofenceTransition,
+                    triggeringGeofences ?: listOf()
+                )
+                sendNotification(geofenceTransitionDetails)
+                Log.e("Detalhes transition", geofenceTransitionDetails)
+            } else
+                Log.e("Error transition", "Transicao invalida")
+        }
     }
 
     private fun sendNotification(details: String) {

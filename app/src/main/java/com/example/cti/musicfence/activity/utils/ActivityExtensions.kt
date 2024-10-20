@@ -8,7 +8,7 @@ import android.provider.MediaStore
 import androidx.annotation.RequiresApi
 import androidx.core.app.ActivityCompat
 import androidx.core.content.ContextCompat
-import com.example.cti.musicfence.activity.MainActivity.Companion.MY_PERMISSIONS_READ_EXTERNAL_STORAGE
+import com.example.cti.musicfence.musicPlayer.view.MusicPlayerActivity.Companion.MY_PERMISSIONS_READ_EXTERNAL_STORAGE
 import com.example.cti.musicfence.musicPlayer.model.Music
 
 @RequiresApi(Build.VERSION_CODES.TIRAMISU)

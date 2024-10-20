@@ -18,7 +18,7 @@
         android:supportsRtl="true"
         android:theme="@style/AppTheme">
         <activity
-            android:name=".activity.MainActivity"
+            android:name=".musicPlayer.view.MusicPlayerActivity"
             android:exported="true"
             android:theme="@style/AppTheme">
             <intent-filter>

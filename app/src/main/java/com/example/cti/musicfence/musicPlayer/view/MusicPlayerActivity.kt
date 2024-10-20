@@ -1,4 +1,4 @@
-package com.example.cti.musicfence.activity
+package com.example.cti.musicfence.musicPlayer.view
 
 import android.annotation.SuppressLint
 import android.app.PendingIntent
@@ -13,12 +13,15 @@ import android.util.Log
 import android.widget.ArrayAdapter
 import android.widget.SeekBar
 import android.widget.TextView
+import androidx.activity.viewModels
 import androidx.appcompat.app.AppCompatActivity
 import com.example.cti.musicfence.R
+import com.example.cti.musicfence.activity.MapsActivity
 import com.example.cti.musicfence.activity.utils.getAllMusics
 import com.example.cti.musicfence.activity.utils.handlePermissionAboveApi33
 import com.example.cti.musicfence.activity.utils.handlePermissionBeforeApi33
 import com.example.cti.musicfence.databinding.ActivityInicioBinding
+import com.example.cti.musicfence.model.GeofenceModel
 import com.example.cti.musicfence.musicPlayer.service.Mp3player
 import com.example.cti.musicfence.musicPlayer.service.Mp3player.PlayerBinder
 import com.example.cti.musicfence.musicPlayer.utils.MusicPlayer.mediaPlayer
@@ -38,17 +41,18 @@ import com.google.android.gms.location.GeofencingRequest
 import com.google.android.gms.location.LocationServices
 import com.google.android.gms.maps.model.LatLng
 
-class MainActivity : AppCompatActivity(), ServiceConnection, ResultCallback<Status>,
+class MusicPlayerActivity : AppCompatActivity(), ServiceConnection, ResultCallback<Status>,
     GoogleApiClient.ConnectionCallbacks, GoogleApiClient.OnConnectionFailedListener {
 
     private val binding: ActivityInicioBinding by lazy {
         ActivityInicioBinding.inflate(layoutInflater)
     }
 
+    private val musicPlayerViewModel: MusicPlayerViewModel by viewModels()
+
     private var binder: PlayerBinder? = null
 
     private var conexao: ServiceConnection? = null
-    private val duracaoGeofence = 60 * 60 + 1000.toLong()
     private val geofencingClient: GeofencingClient by lazy {
         LocationServices.getGeofencingClient(
             this
@@ -79,8 +83,8 @@ class MainActivity : AppCompatActivity(), ServiceConnection, ResultCallback<Stat
         for (g in dbFunc.listar()) {
             val g2 = createGeofence(g)
             val geofencingRequest = geofencingRequest(g2)
-            geofencingClient?.addGeofences(geofencingRequest, criarGeoPendingIntent())
-                ?.addOnSuccessListener(this) { Log.d("Status", "sucesso.") }
+            geofencingClient.addGeofences(geofencingRequest, criarGeoPendingIntent())
+                .addOnSuccessListener(this) { Log.d("Status", "sucesso.") }
         }
     }
 
@@ -99,30 +103,23 @@ class MainActivity : AppCompatActivity(), ServiceConnection, ResultCallback<Stat
         }
     }
 
-    private fun createGeofence(g: com.example.cti.musicfence.model.GeofenceModel): Geofence {
-        Log.d("Criar geofence", "Criada.")
-        return Geofence.Builder()
-            .setRequestId("0")
-            .setCircularRegion(g.latitude, g.longitude, g.raio.toFloat())
-            .setExpirationDuration(duracaoGeofence)
-            .setTransitionTypes(
-                Geofence.GEOFENCE_TRANSITION_ENTER or
-                        Geofence.GEOFENCE_TRANSITION_EXIT
-            )
-            .build()
+    private fun createGeofence(g: GeofenceModel): Geofence {
+        return GeofenceModel(
+            latitude = g.latitude,
+            longitude = g.longitude,
+            radius = g.radius,
+        )
     }
 
     private val geoPendingIntent: PendingIntent? = null
 
     private fun criarGeoPendingIntent(): PendingIntent {
-        Log.d("Criar Pending Intent", "Criado.")
         if (geoPendingIntent != null) return geoPendingIntent
         val intent = Intent(this, GeofenceBroadcastReceiver::class.java)
         return PendingIntent.getService(this, 0, intent, PendingIntent.FLAG_UPDATE_CURRENT)
     }
 
     private fun geofencingRequest(geofence: Geofence): GeofencingRequest {
-        Log.d("GeoRequest ", "Request")
         return GeofencingRequest.Builder()
             .setInitialTrigger(GeofencingRequest.INITIAL_TRIGGER_ENTER)
             .addGeofence(geofence)
@@ -136,16 +133,15 @@ class MainActivity : AppCompatActivity(), ServiceConnection, ResultCallback<Stat
         startService(intentService)
         binding.listaMusicas.apply {
             adapter = ArrayAdapter(
-                this@MainActivity,
+                this@MusicPlayerActivity,
                 R.layout.lista_titulo_sumario_texto,
                 playlist.map { it.title }
             )
             setOnItemClickListener { _, _, position, _ ->
                 binder?.playMusic(position)
-
             }
             setOnItemLongClickListener { _, view, _, _ ->
-                val intent = Intent(this@MainActivity, MapsActivity::class.java)
+                val intent = Intent(this@MusicPlayerActivity, MapsActivity::class.java)
                 intent.putExtra("nomeMusica", (view as TextView).text.toString())
                 startActivity(intent)
                 false
@@ -154,7 +150,7 @@ class MainActivity : AppCompatActivity(), ServiceConnection, ResultCallback<Stat
         conexao = this
         if (binder == null || binder?.isBinderAlive == false) {
             val intentPlayer = Intent(this, Mp3player::class.java)
-            bindService(intentPlayer, conexao as MainActivity, BIND_AUTO_CREATE)
+            bindService(intentPlayer, conexao as MusicPlayerActivity, BIND_AUTO_CREATE)
             startService(intentPlayer)
         }
     }
@@ -246,7 +242,7 @@ class MainActivity : AppCompatActivity(), ServiceConnection, ResultCallback<Stat
         Log.d("Id Geofence", "entrou em uma geofence")
         val dbFunc = DatabaseFunc(this)
         for (geo in dbFunc.listar()) {
-            Log.d(geo.musica, geo.latitude.toString() + " - " + geo.longitude)
+            Log.d(geo.musicName, geo.latitude.toString() + " - " + geo.longitude)
             if (CalcDistancia.distance(
                     latLng.latitude,
                     geo.latitude,
@@ -254,12 +250,12 @@ class MainActivity : AppCompatActivity(), ServiceConnection, ResultCallback<Stat
                     geo.longitude,
                     1.0,
                     1.0
-                ) < geo.raio
+                ) < geo.radius
             ) {
-                val nomeMusica = geo.musica
-                Log.i("Musica Geo", nomeMusica.toString())
+                val nomeMusica = geo.musicName
+                Log.i("Musica Geo", nomeMusica)
                 for ((index, i) in playlist.indices.withIndex()) {
-                    if (playlist[i].title?.contains(nomeMusica.toString()) == true) {
+                    if (playlist[i].title?.contains(nomeMusica) == true) {
                         Log.d("teste", "Play music")
                         binder?.playMusic(index)
                         binder?.play()

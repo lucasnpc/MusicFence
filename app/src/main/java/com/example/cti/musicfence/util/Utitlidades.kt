@@ -51,7 +51,7 @@ class CalcDistancia {
 class DatabaseFunc(context: Context?) {
     private val tabela = "geoFence"
     private val gateway: DBGateway = context?.let { DBGateway.getInstance(it) }!!
-    fun adicionar(latitude: Double, longitude: Double, raio: Double, musica: String?): Boolean {
+    fun adicionar(latitude: Double, longitude: Double, raio: Float, musica: String?): Boolean {
         val contentValues = ContentValues()
         contentValues.put("latitude", latitude)
         contentValues.put("longitude", longitude)
@@ -68,16 +68,18 @@ class DatabaseFunc(context: Context?) {
     @SuppressLint("Recycle")
     fun listar(): ArrayList<GeofenceModel> {
         val cursor = gateway.database.rawQuery("SELECT * FROM geoFence", null)
-        val GeofenceModels = ArrayList<GeofenceModel>()
+        val geofences = ArrayList<GeofenceModel>()
         while (cursor.moveToNext()) {
-            val g = GeofenceModel()
-            g.latitude = cursor.getDouble(cursor.getColumnIndex("latitude"))
-            g.longitude = cursor.getDouble(cursor.getColumnIndex("longitude"))
-            g.raio = cursor.getDouble(cursor.getColumnIndex("raio"))
-            g.musica = cursor.getString(cursor.getColumnIndex("music"))
-            GeofenceModels.add(g)
+            geofences.add(
+                GeofenceModel(
+                    latitude = cursor.getDouble(cursor.getColumnIndexOrThrow("latitude")),
+                    longitude = cursor.getDouble(cursor.getColumnIndexOrThrow("longitude")),
+                    radius = cursor.getFloat(cursor.getColumnIndexOrThrow("raio")),
+                    musicName = cursor.getString(cursor.getColumnIndexOrThrow("music"))
+                )
+            )
         }
-        return GeofenceModels
+        return geofences
     }
 
 //    @SuppressLint("Recycle")
@@ -96,7 +98,7 @@ class DatabaseFunc(context: Context?) {
 
 }
 
-class LerCoordenadaAtual() {
+class LerCoordenadaAtual {
 
     companion object {
         @JvmStatic
@@ -106,7 +108,6 @@ class LerCoordenadaAtual() {
             locationListener: LocationListener,
             mMap: GoogleMap?
         ) {
-            val locationListener = locationListener
             val locationManager =
                 context?.getSystemService(AppCompatActivity.LOCATION_SERVICE) as LocationManager
             val isGPSEnable = locationManager.isProviderEnabled(LocationManager.GPS_PROVIDER)
