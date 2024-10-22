@@ -5,7 +5,7 @@ package com.example.cti.musicfence.musicPlayer.`interface`
  */
 interface PlayerInterface {
     val musicName: String?
-    fun play()
+    fun play(changeMusic: Boolean = false)
     fun pause()
     fun stop()
     operator fun next()

@@ -9,46 +9,34 @@ import com.example.cti.musicfence.musicPlayer.`interface`.PlayerInterface
 import com.example.cti.musicfence.musicPlayer.utils.MusicPlayer
 
 class Mp3player : Service(), MediaPlayer.OnPreparedListener, MediaPlayer.OnCompletionListener {
-    var isPlay = false
-    var isPaused = false
-    private var changeMusic = false
 
     inner class PlayerBinder : Binder(), PlayerInterface {
         override val musicName: String?
             get() = MusicPlayer.playlist[MusicPlayer.musicIndex].title
 
-        override fun play() {
+        override fun play(changeMusic: Boolean) {
             try {
-                if (!isPlay || changeMusic) {
+                if (!MusicPlayer.mediaPlayer.isPlaying || changeMusic) {
                     MusicPlayer.mediaPlayer.reset()
                     MusicPlayer.mediaPlayer.setDataSource(MusicPlayer.playlist[MusicPlayer.musicIndex].path)
-                    MusicPlayer.mediaPlayer.prepare()
+                    MusicPlayer.mediaPlayer.prepareAsync()
                 }
-                isPlay = true
-                isPaused = false
-                changeMusic = false
-                MusicPlayer.seekBar?.max = MusicPlayer.mediaPlayer.duration
-                MusicPlayer.musicaAtual?.text = MusicPlayer.playlist[MusicPlayer.musicIndex].title
-                Thread {
-                    while (MusicPlayer.mediaPlayer.isPlaying) {
-                        MusicPlayer.seekBar?.progress = MusicPlayer.mediaPlayer.currentPosition
-                    }
-                }.start()
-                MusicPlayer.mediaPlayer.start()
             } catch (e: Exception) {
                 e.printStackTrace()
             }
         }
 
         override fun pause() {
-            MusicPlayer.mediaPlayer.pause()
-            isPaused = true
+            if (MusicPlayer.mediaPlayer.isPlaying) {
+                MusicPlayer.mediaPlayer.pause()
+            }
         }
 
         override fun stop() {
-            MusicPlayer.mediaPlayer.stop()
-            MusicPlayer.seekBar?.progress = 0
-            isPlay = false
+            if (MusicPlayer.mediaPlayer.isPlaying) {
+                MusicPlayer.mediaPlayer.stop()
+                MusicPlayer.seekBar?.progress = 0
+            }
         }
 
         override fun next() {
@@ -57,8 +45,7 @@ class Mp3player : Service(), MediaPlayer.OnPreparedListener, MediaPlayer.OnCompl
             } else {
                 MusicPlayer.musicIndex = 0
             }
-            changeMusic = true
-            this.play()
+            this.play(changeMusic = true)
         }
 
         override fun previous() {
@@ -67,46 +54,28 @@ class Mp3player : Service(), MediaPlayer.OnPreparedListener, MediaPlayer.OnCompl
             } else {
                 MusicPlayer.musicIndex = MusicPlayer.playlist.size - 1
             }
-            changeMusic = true
-            this.play()
+            this.play(changeMusic = true)
         }
 
         override fun playMusic(index: Int) {
             if (index < MusicPlayer.playlist.size) {
                 MusicPlayer.musicIndex = index
+                this.play(changeMusic = true)
             }
-            changeMusic = true
-            this.play()
         }
 
         override fun getDuration(): Int {
-            return MusicPlayer.mediaPlayer.duration
+            return if (MusicPlayer.mediaPlayer.isPlaying) MusicPlayer.mediaPlayer.duration else 0
         }
 
         override fun getCurrentPosition(): Int {
-            return MusicPlayer.mediaPlayer.currentPosition
+            return if (MusicPlayer.mediaPlayer.isPlaying) MusicPlayer.mediaPlayer.currentPosition else 0
         }
     }
 
     override fun onStartCommand(intent: Intent, flags: Int, startId: Int): Int {
-        when (intent.action) {
-            ACTION_PLAY -> {
-                MusicPlayer.mediaPlayer.apply {
-                    setOnPreparedListener(this@Mp3player)
-                    prepareAsync()
-                }
-            }
-        }
-
-        MusicPlayer.musicIndex = 0
+        MusicPlayer.mediaPlayer.setOnPreparedListener(this)
         MusicPlayer.mediaPlayer.setOnCompletionListener(this)
-        try {
-            MusicPlayer.mediaPlayer.setDataSource(MusicPlayer.playlist[MusicPlayer.musicIndex].path)
-            MusicPlayer.mediaPlayer.prepare()
-        } catch (e: Exception) {
-            e.printStackTrace()
-        }
-
         return super.onStartCommand(intent, flags, startId)
     }
 
@@ -120,24 +89,14 @@ class Mp3player : Service(), MediaPlayer.OnPreparedListener, MediaPlayer.OnCompl
         } else {
             MusicPlayer.musicIndex = 0
         }
-        changeMusic = true
-        play()
+        playOnCompletion()
     }
 
-    private fun play() {
+    private fun playOnCompletion() {
         try {
-            if (changeMusic) {
-                MusicPlayer.mediaPlayer.reset()
-                MusicPlayer.mediaPlayer.setDataSource(MusicPlayer.playlist[MusicPlayer.musicIndex].path)
-                MusicPlayer.mediaPlayer.prepare()
-            }
-            MusicPlayer.seekBar?.max = MusicPlayer.mediaPlayer.duration
-            Thread {
-                while (MusicPlayer.mediaPlayer.isPlaying) {
-                    MusicPlayer.seekBar?.progress = MusicPlayer.mediaPlayer.currentPosition
-                }
-            }.start()
-            MusicPlayer.mediaPlayer.start()
+            MusicPlayer.mediaPlayer.reset()
+            MusicPlayer.mediaPlayer.setDataSource(MusicPlayer.playlist[MusicPlayer.musicIndex].path)
+            MusicPlayer.mediaPlayer.prepareAsync()
         } catch (e: Exception) {
             e.printStackTrace()
         }
@@ -145,9 +104,18 @@ class Mp3player : Service(), MediaPlayer.OnPreparedListener, MediaPlayer.OnCompl
 
     override fun onPrepared(mp: MediaPlayer?) {
         MusicPlayer.mediaPlayer.start()
-    }
+        MusicPlayer.seekBar?.max = MusicPlayer.mediaPlayer.duration
+        MusicPlayer.musicaAtual?.text = MusicPlayer.playlist[MusicPlayer.musicIndex].title
 
-    private companion object {
-        const val ACTION_PLAY: String = "com.example.action.PLAY"
+        Thread {
+            while (MusicPlayer.mediaPlayer.isPlaying) {
+                MusicPlayer.seekBar?.progress = MusicPlayer.mediaPlayer.currentPosition
+                try {
+                    Thread.sleep(100)
+                } catch (e: InterruptedException) {
+                    e.printStackTrace()
+                }
+            }
+        }.start()
     }
 }
