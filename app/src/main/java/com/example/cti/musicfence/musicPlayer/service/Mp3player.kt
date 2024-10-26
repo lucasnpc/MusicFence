@@ -5,8 +5,11 @@ import android.content.Intent
 import android.media.MediaPlayer
 import android.os.Binder
 import android.os.IBinder
+import com.example.cti.musicfence.musicPlayer.enum.MusicPlayerAction
 import com.example.cti.musicfence.musicPlayer.`interface`.PlayerInterface
 import com.example.cti.musicfence.musicPlayer.utils.MusicPlayer
+import com.example.cti.musicfence.musicPlayer.utils.MusicPlayer.mediaPlayer
+import com.example.cti.musicfence.musicPlayer.utils.MusicPlayer.musicPlayerTrigger
 
 class Mp3player : Service(), MediaPlayer.OnPreparedListener, MediaPlayer.OnCompletionListener {
 
@@ -14,28 +17,31 @@ class Mp3player : Service(), MediaPlayer.OnPreparedListener, MediaPlayer.OnCompl
         override val musicName: String?
             get() = MusicPlayer.playlist[MusicPlayer.musicIndex].title
 
-        override fun play(changeMusic: Boolean) {
-            try {
-                if (!MusicPlayer.mediaPlayer.isPlaying || changeMusic) {
-                    MusicPlayer.mediaPlayer.reset()
-                    MusicPlayer.mediaPlayer.setDataSource(MusicPlayer.playlist[MusicPlayer.musicIndex].path)
-                    MusicPlayer.mediaPlayer.prepareAsync()
-                }
-            } catch (e: Exception) {
-                e.printStackTrace()
+        override fun play() {
+            when (musicPlayerTrigger.value) {
+                MusicPlayerAction.STOP -> changeMusicOrReset()
+
+                MusicPlayerAction.PAUSE -> resumePlayer()
+
+                MusicPlayerAction.PLAY -> Unit
+
+                MusicPlayerAction.NEXT -> changeMusicOrReset()
+
+                MusicPlayerAction.PREVIOUS -> changeMusicOrReset()
             }
         }
 
         override fun pause() {
-            if (MusicPlayer.mediaPlayer.isPlaying) {
-                MusicPlayer.mediaPlayer.pause()
+            if (mediaPlayer.isPlaying) {
+                mediaPlayer.pause()
+                musicPlayerTrigger.value = MusicPlayerAction.PAUSE
             }
         }
 
         override fun stop() {
-            if (MusicPlayer.mediaPlayer.isPlaying) {
-                MusicPlayer.mediaPlayer.stop()
-                MusicPlayer.seekBar?.progress = 0
+            if (mediaPlayer.isPlaying) {
+                mediaPlayer.stop()
+                musicPlayerTrigger.value = MusicPlayerAction.STOP
             }
         }
 
@@ -45,7 +51,8 @@ class Mp3player : Service(), MediaPlayer.OnPreparedListener, MediaPlayer.OnCompl
             } else {
                 MusicPlayer.musicIndex = 0
             }
-            this.play(changeMusic = true)
+            musicPlayerTrigger.value = MusicPlayerAction.NEXT
+            this.play()
         }
 
         override fun previous() {
@@ -54,28 +61,34 @@ class Mp3player : Service(), MediaPlayer.OnPreparedListener, MediaPlayer.OnCompl
             } else {
                 MusicPlayer.musicIndex = MusicPlayer.playlist.size - 1
             }
-            this.play(changeMusic = true)
+            musicPlayerTrigger.value = MusicPlayerAction.PREVIOUS
+            this.play()
         }
 
         override fun playMusic(index: Int) {
             if (index < MusicPlayer.playlist.size) {
                 MusicPlayer.musicIndex = index
-                this.play(changeMusic = true)
+                this.play()
             }
         }
 
         override fun getDuration(): Int {
-            return if (MusicPlayer.mediaPlayer.isPlaying) MusicPlayer.mediaPlayer.duration else 0
+            return mediaPlayer.duration
         }
 
         override fun getCurrentPosition(): Int {
-            return if (MusicPlayer.mediaPlayer.isPlaying) MusicPlayer.mediaPlayer.currentPosition else 0
+            return mediaPlayer.currentPosition
         }
     }
 
+    private fun resumePlayer() {
+        mediaPlayer.start()
+        musicPlayerTrigger.value = MusicPlayerAction.PLAY
+    }
+
     override fun onStartCommand(intent: Intent, flags: Int, startId: Int): Int {
-        MusicPlayer.mediaPlayer.setOnPreparedListener(this)
-        MusicPlayer.mediaPlayer.setOnCompletionListener(this)
+        mediaPlayer.setOnPreparedListener(this)
+        mediaPlayer.setOnCompletionListener(this)
         return super.onStartCommand(intent, flags, startId)
     }
 
@@ -89,33 +102,18 @@ class Mp3player : Service(), MediaPlayer.OnPreparedListener, MediaPlayer.OnCompl
         } else {
             MusicPlayer.musicIndex = 0
         }
-        playOnCompletion()
+        musicPlayerTrigger.value = MusicPlayerAction.NEXT
+        changeMusicOrReset()
     }
 
-    private fun playOnCompletion() {
-        try {
-            MusicPlayer.mediaPlayer.reset()
-            MusicPlayer.mediaPlayer.setDataSource(MusicPlayer.playlist[MusicPlayer.musicIndex].path)
-            MusicPlayer.mediaPlayer.prepareAsync()
-        } catch (e: Exception) {
-            e.printStackTrace()
-        }
+    private fun changeMusicOrReset() {
+        mediaPlayer.reset()
+        mediaPlayer.setDataSource(MusicPlayer.playlist[MusicPlayer.musicIndex].path)
+        mediaPlayer.prepareAsync()
     }
 
     override fun onPrepared(mp: MediaPlayer?) {
-        MusicPlayer.mediaPlayer.start()
-        MusicPlayer.seekBar?.max = MusicPlayer.mediaPlayer.duration
-        MusicPlayer.musicaAtual?.text = MusicPlayer.playlist[MusicPlayer.musicIndex].title
-
-        Thread {
-            while (MusicPlayer.mediaPlayer.isPlaying) {
-                MusicPlayer.seekBar?.progress = MusicPlayer.mediaPlayer.currentPosition
-                try {
-                    Thread.sleep(100)
-                } catch (e: InterruptedException) {
-                    e.printStackTrace()
-                }
-            }
-        }.start()
+        mediaPlayer.start()
+        musicPlayerTrigger.value = MusicPlayerAction.PLAY
     }
 }

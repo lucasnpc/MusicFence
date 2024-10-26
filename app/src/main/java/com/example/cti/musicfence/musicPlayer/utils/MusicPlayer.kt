@@ -1,9 +1,9 @@
 package com.example.cti.musicfence.musicPlayer.utils
 
 import android.media.MediaPlayer
-import android.widget.SeekBar
-import android.widget.TextView
+import com.example.cti.musicfence.musicPlayer.enum.MusicPlayerAction
 import com.example.cti.musicfence.musicPlayer.model.Music
+import kotlinx.coroutines.flow.MutableStateFlow
 
 object MusicPlayer {
 
@@ -11,11 +11,11 @@ object MusicPlayer {
         MediaPlayer()
     }
 
+    val musicPlayerTrigger: MutableStateFlow<MusicPlayerAction> =
+        MutableStateFlow(MusicPlayerAction.STOP)
+
     var playlist: ArrayList<Music> = arrayListOf()
 
     var musicIndex = 0
 
-    var seekBar: SeekBar? = null
-
-    var musicaAtual: TextView? = null
 }

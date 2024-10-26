@@ -15,6 +15,7 @@ import android.widget.SeekBar
 import android.widget.TextView
 import androidx.activity.viewModels
 import androidx.appcompat.app.AppCompatActivity
+import androidx.lifecycle.lifecycleScope
 import com.example.cti.musicfence.R
 import com.example.cti.musicfence.activity.MapsActivity
 import com.example.cti.musicfence.activity.utils.getAllMusics
@@ -22,12 +23,12 @@ import com.example.cti.musicfence.activity.utils.handlePermissionAboveApi33
 import com.example.cti.musicfence.activity.utils.handlePermissionBeforeApi33
 import com.example.cti.musicfence.databinding.ActivityInicioBinding
 import com.example.cti.musicfence.model.GeofenceModel
+import com.example.cti.musicfence.musicPlayer.enum.MusicPlayerAction
 import com.example.cti.musicfence.musicPlayer.service.Mp3player
 import com.example.cti.musicfence.musicPlayer.service.Mp3player.PlayerBinder
 import com.example.cti.musicfence.musicPlayer.utils.MusicPlayer.mediaPlayer
-import com.example.cti.musicfence.musicPlayer.utils.MusicPlayer.musicaAtual
+import com.example.cti.musicfence.musicPlayer.utils.MusicPlayer.musicPlayerTrigger
 import com.example.cti.musicfence.musicPlayer.utils.MusicPlayer.playlist
-import com.example.cti.musicfence.musicPlayer.utils.MusicPlayer.seekBar
 import com.example.cti.musicfence.service.GeofenceBroadcastReceiver
 import com.example.cti.musicfence.util.CalcDistancia
 import com.example.cti.musicfence.util.DatabaseFunc
@@ -40,6 +41,9 @@ import com.google.android.gms.location.GeofencingClient
 import com.google.android.gms.location.GeofencingRequest
 import com.google.android.gms.location.LocationServices
 import com.google.android.gms.maps.model.LatLng
+import kotlinx.coroutines.Job
+import kotlinx.coroutines.delay
+import kotlinx.coroutines.launch
 
 class MusicPlayerActivity : AppCompatActivity(), ServiceConnection, ResultCallback<Status>,
     GoogleApiClient.ConnectionCallbacks, GoogleApiClient.OnConnectionFailedListener {
@@ -50,9 +54,14 @@ class MusicPlayerActivity : AppCompatActivity(), ServiceConnection, ResultCallba
 
     private val musicPlayerViewModel: MusicPlayerViewModel by viewModels()
 
+    private val intentPlayer by lazy {
+        Intent(this, Mp3player::class.java)
+    }
+
+    private var updateJob: Job? = null
+
     private var binder: PlayerBinder? = null
 
-    private var conexao: ServiceConnection? = null
     private val geofencingClient: GeofencingClient by lazy {
         LocationServices.getGeofencingClient(
             this
@@ -74,8 +83,6 @@ class MusicPlayerActivity : AppCompatActivity(), ServiceConnection, ResultCallba
             }
         }
 
-        musicaAtual = binding.currentMusicPlaying
-        seekBar = binding.musicProgress
         val intentGeofence = Intent(".GeoFenceTransitionsIntentService")
         intentGeofence.setPackage("com.example.cti.")
         startService(intentGeofence)
@@ -147,10 +154,8 @@ class MusicPlayerActivity : AppCompatActivity(), ServiceConnection, ResultCallba
                 false
             }
         }
-        conexao = this
         if (binder == null || binder?.isBinderAlive == false) {
-            val intentPlayer = Intent(this, Mp3player::class.java)
-            bindService(intentPlayer, conexao as MusicPlayerActivity, BIND_AUTO_CREATE)
+            bindService(intentPlayer, this, BIND_AUTO_CREATE)
             startService(intentPlayer)
         }
     }
@@ -201,6 +206,7 @@ class MusicPlayerActivity : AppCompatActivity(), ServiceConnection, ResultCallba
     }
 
     private fun stopMusic() {
+        binding.musicProgress.progress = 0
         binder?.stop()
     }
 
@@ -214,17 +220,48 @@ class MusicPlayerActivity : AppCompatActivity(), ServiceConnection, ResultCallba
 
     override fun onServiceConnected(name: ComponentName, service: IBinder) {
         binder = service as PlayerBinder
-        try {
-            binding.musicProgress.max = binder?.getDuration() ?: 0
-            binding.musicProgress.progress = binder?.getCurrentPosition() ?: 0
-        } catch (e: Exception) {
-            e.printStackTrace()
-            return
+        lifecycleScope.launch {
+            musicPlayerTrigger.collect { action ->
+                when (action) {
+                    MusicPlayerAction.PLAY -> {
+                        binding.currentMusicPlaying.text = binder?.musicName
+                        binding.musicProgress.max = binder?.getDuration() ?: 0
+                        startUpdatingProgress()
+                    }
+
+                    MusicPlayerAction.PAUSE -> {
+                        stopUpdatingProgress()
+                    }
+
+                    MusicPlayerAction.STOP -> {
+                        stopUpdatingProgress()
+                        binding.currentMusicPlaying.text = null
+                        binding.musicProgress.max = 0
+                        binding.musicProgress.progress = 0
+                    }
+
+                    else -> Unit
+                }
+            }
         }
     }
 
     override fun onServiceDisconnected(name: ComponentName) {
         binder = null
+    }
+
+    private fun startUpdatingProgress() {
+        updateJob = lifecycleScope.launch {
+            while (mediaPlayer.isPlaying) {
+                binding.musicProgress.progress = binder?.getCurrentPosition() ?: 0
+                delay(150)
+            }
+        }
+    }
+
+    private fun stopUpdatingProgress() {
+        updateJob?.cancel()
+        updateJob = null
     }
 
     override fun onResult(status: Status) {
