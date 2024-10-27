@@ -13,7 +13,6 @@ import android.util.Log
 import android.widget.ArrayAdapter
 import android.widget.SeekBar
 import android.widget.TextView
-import androidx.activity.viewModels
 import androidx.appcompat.app.AppCompatActivity
 import androidx.lifecycle.lifecycleScope
 import com.example.cti.musicfence.R
@@ -45,17 +44,29 @@ import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 
-class MusicPlayerActivity : AppCompatActivity(), ServiceConnection, ResultCallback<Status>,
+class MusicPlayerActivity : AppCompatActivity(), ResultCallback<Status>,
     GoogleApiClient.ConnectionCallbacks, GoogleApiClient.OnConnectionFailedListener {
 
     private val binding: ActivityInicioBinding by lazy {
         ActivityInicioBinding.inflate(layoutInflater)
     }
 
-    private val musicPlayerViewModel: MusicPlayerViewModel by viewModels()
-
-    private val intentPlayer by lazy {
+    private val musicService by lazy {
         Intent(this, Mp3player::class.java)
+    }
+
+    private var bound = false
+
+    private val serviceConnection = object : ServiceConnection {
+        override fun onServiceConnected(name: ComponentName?, service: IBinder?) {
+            binder = service as PlayerBinder
+            bound = true
+        }
+
+        override fun onServiceDisconnected(name: ComponentName?) {
+            bound = false
+            binder = null
+        }
     }
 
     private var updateJob: Job? = null
@@ -73,15 +84,8 @@ class MusicPlayerActivity : AppCompatActivity(), ServiceConnection, ResultCallba
         super.onCreate(savedInstanceState)
         setContentView(binding.root)
         setClickListeners()
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
-            handlePermissionAboveApi33 {
-                setupPlayList()
-            }
-        } else {
-            handlePermissionBeforeApi33 {
-                setupPlayList()
-            }
-        }
+        setupSeekBarListener()
+        setupMusicPlayerCollect()
 
         val intentGeofence = Intent(".GeoFenceTransitionsIntentService")
         intentGeofence.setPackage("com.example.cti.")
@@ -92,6 +96,116 @@ class MusicPlayerActivity : AppCompatActivity(), ServiceConnection, ResultCallba
             val geofencingRequest = geofencingRequest(g2)
             geofencingClient.addGeofences(geofencingRequest, criarGeoPendingIntent())
                 .addOnSuccessListener(this) { Log.d("Status", "sucesso.") }
+        }
+    }
+
+    override fun onStart() {
+        super.onStart()
+        startMusicService()
+
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+            handlePermissionAboveApi33 {
+                setupPlayList()
+            }
+        } else {
+            handlePermissionBeforeApi33 {
+                setupPlayList()
+            }
+        }
+    }
+
+    private fun setupMusicPlayerCollect() {
+        lifecycleScope.launch {
+            musicPlayerTrigger.collect { action ->
+                when (action) {
+                    MusicPlayerAction.PLAY -> {
+                        binding.currentMusicPlaying.text = binder?.musicName
+                        binding.musicProgress.max = binder?.getDuration() ?: 0
+                        startUpdatingProgress()
+                    }
+
+                    MusicPlayerAction.PAUSE -> {
+                        stopUpdatingProgress()
+                    }
+
+                    MusicPlayerAction.STOP -> {
+                        stopUpdatingProgress()
+                        binding.currentMusicPlaying.text = null
+                        binding.musicProgress.max = 0
+                        binding.musicProgress.progress = 0
+                    }
+
+                    else -> Unit
+                }
+            }
+        }
+    }
+
+    private fun startMusicService() {
+        bindService(musicService, serviceConnection, BIND_AUTO_CREATE)
+        startService(musicService)
+    }
+
+    private fun setClickListeners() {
+        binding.run {
+            buttonPlay.setOnClickListener {
+                binder?.play()
+            }
+            buttonPause.setOnClickListener {
+                binder?.pause()
+            }
+            buttonStop.setOnClickListener {
+                binding.musicProgress.progress = 0
+                binder?.stop()
+            }
+            buttonNext.setOnClickListener {
+                binder?.next()
+            }
+            buttonPrevious.setOnClickListener {
+                binder?.previous()
+            }
+        }
+    }
+
+    private fun setupSeekBarListener() {
+        binding.run {
+            musicProgress.setOnSeekBarChangeListener(object :
+                SeekBar.OnSeekBarChangeListener {
+                override fun onStopTrackingTouch(seekBar: SeekBar) {
+                    mediaPlayer.seekTo(musicProgress.progress)
+                    mediaPlayer.start()
+                }
+
+                override fun onStartTrackingTouch(seekBar: SeekBar) {}
+                override fun onProgressChanged(
+                    seekBar: SeekBar, progress: Int,
+                    fromUser: Boolean
+                ) {
+                    if (fromUser) {
+                        mediaPlayer.seekTo(progress)
+                    }
+                }
+            })
+        }
+    }
+
+    private fun setupPlayList() {
+        playlist = getAllMusics()
+        binding.listaMusicas.apply {
+            adapter = ArrayAdapter(
+                this@MusicPlayerActivity,
+                R.layout.lista_titulo_sumario_texto,
+                playlist.map { it.title }
+            )
+            setOnItemClickListener { _, _, position, _ ->
+                binder?.playMusic(position)
+            }
+            setOnItemLongClickListener { _, view, _, _ ->
+                val intent = Intent(this@MusicPlayerActivity, MapsActivity::class.java)
+                intent.putExtra("nomeMusica", (view as TextView).text.toString())
+                startActivity(intent)
+                false
+            }
         }
     }
 
@@ -133,121 +247,12 @@ class MusicPlayerActivity : AppCompatActivity(), ServiceConnection, ResultCallba
             .build()
     }
 
-    private fun setupPlayList() {
-        playlist = getAllMusics()
-        val intentService = Intent("com.example.cti.musicfence.SERVICE_PLAYER_2")
-        intentService.setPackage("com.example.cti.")
-        startService(intentService)
-        binding.listaMusicas.apply {
-            adapter = ArrayAdapter(
-                this@MusicPlayerActivity,
-                R.layout.lista_titulo_sumario_texto,
-                playlist.map { it.title }
-            )
-            setOnItemClickListener { _, _, position, _ ->
-                binder?.playMusic(position)
-            }
-            setOnItemLongClickListener { _, view, _, _ ->
-                val intent = Intent(this@MusicPlayerActivity, MapsActivity::class.java)
-                intent.putExtra("nomeMusica", (view as TextView).text.toString())
-                startActivity(intent)
-                false
-            }
+    override fun onStop() {
+        super.onStop()
+        if (bound) {
+            unbindService(serviceConnection)
+            stopService(musicService)
         }
-        if (binder == null || binder?.isBinderAlive == false) {
-            bindService(intentPlayer, this, BIND_AUTO_CREATE)
-            startService(intentPlayer)
-        }
-    }
-
-    override fun onDestroy() {
-        super.onDestroy()
-        val intentService = Intent("com.example.cti.musicfence.SERVICE_PLAYER_2")
-        intentService.setPackage("com.example.cti.")
-        stopService(intentService)
-        val intentGeofence = Intent(".GeoFenceTransitionsIntentService")
-        intentGeofence.setPackage("com.example.cti.")
-        stopService(intentGeofence)
-    }
-
-    private fun setClickListeners() {
-        binding.run {
-            buttonPlay.setOnClickListener { playMusic() }
-            buttonPause.setOnClickListener { pauseMusic() }
-            buttonStop.setOnClickListener { stopMusic() }
-            buttonNext.setOnClickListener { nextMusic() }
-            buttonPrevious.setOnClickListener { previousMusic() }
-            musicProgress.setOnSeekBarChangeListener(object :
-                SeekBar.OnSeekBarChangeListener {
-                override fun onStopTrackingTouch(seekBar: SeekBar) {
-                    mediaPlayer.seekTo(musicProgress.progress)
-                    mediaPlayer.start()
-                }
-
-                override fun onStartTrackingTouch(seekBar: SeekBar) {}
-                override fun onProgressChanged(
-                    seekBar: SeekBar, progress: Int,
-                    fromUser: Boolean
-                ) {
-                    if (fromUser) {
-                        mediaPlayer.seekTo(progress)
-                    }
-                }
-            })
-        }
-    }
-
-    private fun playMusic() {
-        binder?.play()
-    }
-
-    private fun pauseMusic() {
-        binder?.pause()
-    }
-
-    private fun stopMusic() {
-        binding.musicProgress.progress = 0
-        binder?.stop()
-    }
-
-    private fun nextMusic() {
-        binder?.next()
-    }
-
-    private fun previousMusic() {
-        binder?.previous()
-    }
-
-    override fun onServiceConnected(name: ComponentName, service: IBinder) {
-        binder = service as PlayerBinder
-        lifecycleScope.launch {
-            musicPlayerTrigger.collect { action ->
-                when (action) {
-                    MusicPlayerAction.PLAY -> {
-                        binding.currentMusicPlaying.text = binder?.musicName
-                        binding.musicProgress.max = binder?.getDuration() ?: 0
-                        startUpdatingProgress()
-                    }
-
-                    MusicPlayerAction.PAUSE -> {
-                        stopUpdatingProgress()
-                    }
-
-                    MusicPlayerAction.STOP -> {
-                        stopUpdatingProgress()
-                        binding.currentMusicPlaying.text = null
-                        binding.musicProgress.max = 0
-                        binding.musicProgress.progress = 0
-                    }
-
-                    else -> Unit
-                }
-            }
-        }
-    }
-
-    override fun onServiceDisconnected(name: ComponentName) {
-        binder = null
     }
 
     private fun startUpdatingProgress() {

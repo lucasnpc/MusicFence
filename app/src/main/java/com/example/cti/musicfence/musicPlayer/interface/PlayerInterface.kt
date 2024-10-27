@@ -8,7 +8,7 @@ interface PlayerInterface {
     fun play()
     fun pause()
     fun stop()
-    operator fun next()
+    fun next()
     fun previous()
     fun playMusic(index: Int)
     fun getDuration(): Int
