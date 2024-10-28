@@ -55,16 +55,16 @@ class MusicPlayerActivity : AppCompatActivity(), ResultCallback<Status>,
         Intent(this, Mp3player::class.java)
     }
 
-    private var bound = false
+    private var isServiceConnected = false
 
     private val serviceConnection = object : ServiceConnection {
         override fun onServiceConnected(name: ComponentName?, service: IBinder?) {
             binder = service as PlayerBinder
-            bound = true
+            isServiceConnected = true
         }
 
         override fun onServiceDisconnected(name: ComponentName?) {
-            bound = false
+            isServiceConnected = false
             binder = null
         }
     }
@@ -249,7 +249,7 @@ class MusicPlayerActivity : AppCompatActivity(), ResultCallback<Status>,
 
     override fun onStop() {
         super.onStop()
-        if (bound) {
+        if (isServiceConnected) {
             unbindService(serviceConnection)
             stopService(musicService)
         }
