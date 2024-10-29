@@ -6,70 +6,85 @@ import android.media.MediaPlayer
 import android.os.Binder
 import android.os.IBinder
 import com.example.cti.musicfence.musicPlayer.enum.MusicPlayerAction
-import com.example.cti.musicfence.musicPlayer.`interface`.PlayerInterface
-import com.example.cti.musicfence.musicPlayer.utils.MusicPlayer
-import com.example.cti.musicfence.musicPlayer.utils.MusicPlayer.mediaPlayer
-import com.example.cti.musicfence.musicPlayer.utils.MusicPlayer.musicPlayerTrigger
+import com.example.cti.musicfence.musicPlayer.`interface`.PlayerBinderInterface
+import com.example.cti.musicfence.musicPlayer.model.Music
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.StateFlow
 
 class Mp3player : Service(), MediaPlayer.OnPreparedListener, MediaPlayer.OnCompletionListener {
 
-    inner class PlayerBinder : Binder(), PlayerInterface {
+    private val mediaPlayer: MediaPlayer by lazy {
+        MediaPlayer()
+    }
+
+    private val _musicPlayerState: MutableStateFlow<MusicPlayerAction> =
+        MutableStateFlow(MusicPlayerAction.STOP)
+
+    private val playlist: ArrayList<Music> = arrayListOf()
+
+    private var currentMusicIndex = -1
+
+    inner class PlayerBinder : Binder(), PlayerBinderInterface {
         override val musicName: String?
-            get() = MusicPlayer.playlist[MusicPlayer.musicIndex].title
+            get() = playlist[currentMusicIndex].title
+
+        val musicPlayerState: StateFlow<MusicPlayerAction> = _musicPlayerState
 
         override fun play() {
-            when (musicPlayerTrigger.value) {
+            when (_musicPlayerState.value) {
+                MusicPlayerAction.PLAYING -> Unit
+
+                MusicPlayerAction.PAUSED -> resumePlayer()
+
                 MusicPlayerAction.STOP -> changeMusicOrReset()
 
-                MusicPlayerAction.PAUSE -> resumePlayer()
+                MusicPlayerAction.CHANGEMUSIC -> changeMusicOrReset()
 
-                MusicPlayerAction.PLAY -> Unit
-
-                MusicPlayerAction.NEXT -> changeMusicOrReset()
-
-                MusicPlayerAction.PREVIOUS -> changeMusicOrReset()
             }
         }
 
         override fun pause() {
             if (mediaPlayer.isPlaying) {
                 mediaPlayer.pause()
-                musicPlayerTrigger.value = MusicPlayerAction.PAUSE
+                _musicPlayerState.value = MusicPlayerAction.PAUSED
             }
         }
 
         override fun stop() {
             if (mediaPlayer.isPlaying) {
                 mediaPlayer.stop()
-                musicPlayerTrigger.value = MusicPlayerAction.STOP
+                _musicPlayerState.value = MusicPlayerAction.STOP
             }
         }
 
         override fun next() {
-            if (MusicPlayer.musicIndex < MusicPlayer.playlist.size - 1) {
-                MusicPlayer.musicIndex += 1
+            if (currentMusicIndex < 0) return
+            if (currentMusicIndex < playlist.size - 1) {
+                currentMusicIndex += 1
             } else {
-                MusicPlayer.musicIndex = 0
+                currentMusicIndex = 0
             }
-            musicPlayerTrigger.value = MusicPlayerAction.NEXT
+            _musicPlayerState.value = MusicPlayerAction.CHANGEMUSIC
             this.play()
         }
 
         override fun previous() {
-            if (MusicPlayer.musicIndex > 0) {
-                MusicPlayer.musicIndex -= 1
+            if (currentMusicIndex < 0) return
+            if (currentMusicIndex > 0) {
+                currentMusicIndex -= 1
             } else {
-                MusicPlayer.musicIndex = MusicPlayer.playlist.size - 1
+                currentMusicIndex = playlist.size - 1
             }
-            musicPlayerTrigger.value = MusicPlayerAction.PREVIOUS
+            _musicPlayerState.value = MusicPlayerAction.CHANGEMUSIC
             this.play()
         }
 
         override fun playMusic(index: Int) {
-            if (index < MusicPlayer.playlist.size) {
-                MusicPlayer.musicIndex = index
-                this.play()
+            if (index != currentMusicIndex) {
+                currentMusicIndex = index
+                _musicPlayerState.value = MusicPlayerAction.CHANGEMUSIC
             }
+            this.play()
         }
 
         override fun getDuration(): Int {
@@ -79,11 +94,30 @@ class Mp3player : Service(), MediaPlayer.OnPreparedListener, MediaPlayer.OnCompl
         override fun getCurrentPosition(): Int {
             return mediaPlayer.currentPosition
         }
+
+        override fun handleSeekBarChange(progress: Int, fromUser: Boolean) {
+            if (fromUser) {
+                mediaPlayer.seekTo(progress)
+            }
+        }
+
+        override fun seekAndStart(progress: Int) {
+            mediaPlayer.seekTo(progress)
+            mediaPlayer.start()
+        }
+
+        override fun submitPlaylist(list: ArrayList<Music>) {
+            playlist.addAll(list)
+        }
+
+        override fun getPlaylist(): List<Music> {
+            return playlist
+        }
     }
 
     private fun resumePlayer() {
         mediaPlayer.start()
-        musicPlayerTrigger.value = MusicPlayerAction.PLAY
+        _musicPlayerState.value = MusicPlayerAction.PLAYING
     }
 
     override fun onStartCommand(intent: Intent, flags: Int, startId: Int): Int {
@@ -97,23 +131,23 @@ class Mp3player : Service(), MediaPlayer.OnPreparedListener, MediaPlayer.OnCompl
     }
 
     override fun onCompletion(mp: MediaPlayer) {
-        if (MusicPlayer.musicIndex < MusicPlayer.playlist.size - 1) {
-            MusicPlayer.musicIndex += 1
+        if (currentMusicIndex < playlist.size - 1) {
+            currentMusicIndex += 1
         } else {
-            MusicPlayer.musicIndex = 0
+            currentMusicIndex = 0
         }
-        musicPlayerTrigger.value = MusicPlayerAction.NEXT
+        _musicPlayerState.value = MusicPlayerAction.CHANGEMUSIC
         changeMusicOrReset()
     }
 
     private fun changeMusicOrReset() {
         mediaPlayer.reset()
-        mediaPlayer.setDataSource(MusicPlayer.playlist[MusicPlayer.musicIndex].path)
+        mediaPlayer.setDataSource(playlist[currentMusicIndex].path)
         mediaPlayer.prepareAsync()
     }
 
     override fun onPrepared(mp: MediaPlayer?) {
         mediaPlayer.start()
-        musicPlayerTrigger.value = MusicPlayerAction.PLAY
+        _musicPlayerState.value = MusicPlayerAction.PLAYING
     }
 }

@@ -1,9 +1,11 @@
 package com.example.cti.musicfence.musicPlayer.`interface`
 
+import com.example.cti.musicfence.musicPlayer.model.Music
+
 /**
  * Created by Cti on 13/11/2017.
  */
-interface PlayerInterface {
+interface PlayerBinderInterface {
     val musicName: String?
     fun play()
     fun pause()
@@ -13,4 +15,8 @@ interface PlayerInterface {
     fun playMusic(index: Int)
     fun getDuration(): Int
     fun getCurrentPosition(): Int
+    fun handleSeekBarChange(progress: Int, fromUser: Boolean)
+    fun seekAndStart(progress: Int)
+    fun submitPlaylist(list: ArrayList<Music>)
+    fun getPlaylist(): List<Music>
 }

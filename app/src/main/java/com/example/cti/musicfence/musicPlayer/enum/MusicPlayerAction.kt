@@ -1,9 +1,8 @@
 package com.example.cti.musicfence.musicPlayer.enum
 
 enum class MusicPlayerAction {
-    PLAY,
-    PAUSE,
+    PLAYING,
+    PAUSED,
     STOP,
-    NEXT,
-    PREVIOUS,
+    CHANGEMUSIC
 }

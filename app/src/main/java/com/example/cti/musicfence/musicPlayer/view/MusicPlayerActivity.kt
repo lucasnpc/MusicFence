@@ -5,7 +5,6 @@ import android.app.PendingIntent
 import android.content.ComponentName
 import android.content.Intent
 import android.content.ServiceConnection
-import android.content.pm.PackageManager
 import android.os.Build
 import android.os.Bundle
 import android.os.IBinder
@@ -13,21 +12,20 @@ import android.util.Log
 import android.widget.ArrayAdapter
 import android.widget.SeekBar
 import android.widget.TextView
+import android.widget.Toast
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.appcompat.app.AppCompatActivity
 import androidx.lifecycle.lifecycleScope
 import com.example.cti.musicfence.R
 import com.example.cti.musicfence.activity.MapsActivity
 import com.example.cti.musicfence.activity.utils.getAllMusics
-import com.example.cti.musicfence.activity.utils.handlePermissionAboveApi33
-import com.example.cti.musicfence.activity.utils.handlePermissionBeforeApi33
+import com.example.cti.musicfence.activity.utils.getPermissionsAboveApi33
+import com.example.cti.musicfence.activity.utils.getPermissionsUnderApi33
 import com.example.cti.musicfence.databinding.ActivityInicioBinding
 import com.example.cti.musicfence.model.GeofenceModel
 import com.example.cti.musicfence.musicPlayer.enum.MusicPlayerAction
 import com.example.cti.musicfence.musicPlayer.service.Mp3player
 import com.example.cti.musicfence.musicPlayer.service.Mp3player.PlayerBinder
-import com.example.cti.musicfence.musicPlayer.utils.MusicPlayer.mediaPlayer
-import com.example.cti.musicfence.musicPlayer.utils.MusicPlayer.musicPlayerTrigger
-import com.example.cti.musicfence.musicPlayer.utils.MusicPlayer.playlist
 import com.example.cti.musicfence.service.GeofenceBroadcastReceiver
 import com.example.cti.musicfence.util.CalcDistancia
 import com.example.cti.musicfence.util.DatabaseFunc
@@ -55,23 +53,36 @@ class MusicPlayerActivity : AppCompatActivity(), ResultCallback<Status>,
         Intent(this, Mp3player::class.java)
     }
 
+    private var updateJob: Job? = null
+
+    private var playerBinder: PlayerBinder? = null
+
+    private val permissionLauncher = registerForActivityResult(
+        ActivityResultContracts.RequestMultiplePermissions()
+    ) { permissions ->
+        if (permissions.all { it.value }) {
+            startMusicService()
+        } else {
+            Toast.makeText(this, "Permissão negada", Toast.LENGTH_SHORT).show()
+        }
+    }
+
     private var isServiceConnected = false
 
     private val serviceConnection = object : ServiceConnection {
         override fun onServiceConnected(name: ComponentName?, service: IBinder?) {
-            binder = service as PlayerBinder
+            playerBinder = service as PlayerBinder
             isServiceConnected = true
+
+            setupPlayList()
+            setupMusicPlayerCollect()
         }
 
         override fun onServiceDisconnected(name: ComponentName?) {
             isServiceConnected = false
-            binder = null
+            playerBinder = null
         }
     }
-
-    private var updateJob: Job? = null
-
-    private var binder: PlayerBinder? = null
 
     private val geofencingClient: GeofencingClient by lazy {
         LocationServices.getGeofencingClient(
@@ -85,7 +96,6 @@ class MusicPlayerActivity : AppCompatActivity(), ResultCallback<Status>,
         setContentView(binding.root)
         setClickListeners()
         setupSeekBarListener()
-        setupMusicPlayerCollect()
 
         val intentGeofence = Intent(".GeoFenceTransitionsIntentService")
         intentGeofence.setPackage("com.example.cti.")
@@ -101,30 +111,25 @@ class MusicPlayerActivity : AppCompatActivity(), ResultCallback<Status>,
 
     override fun onStart() {
         super.onStart()
-        startMusicService()
-
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
-            handlePermissionAboveApi33 {
-                setupPlayList()
-            }
+        val permissions = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+            getPermissionsAboveApi33()
         } else {
-            handlePermissionBeforeApi33 {
-                setupPlayList()
-            }
+            getPermissionsUnderApi33()
         }
+        permissionLauncher.launch(permissions)
     }
 
     private fun setupMusicPlayerCollect() {
         lifecycleScope.launch {
-            musicPlayerTrigger.collect { action ->
+            playerBinder?.musicPlayerState?.collect { action ->
                 when (action) {
-                    MusicPlayerAction.PLAY -> {
-                        binding.currentMusicPlaying.text = binder?.musicName
-                        binding.musicProgress.max = binder?.getDuration() ?: 0
+                    MusicPlayerAction.PLAYING -> {
+                        binding.currentMusicPlaying.text = playerBinder?.musicName
+                        binding.musicProgress.max = playerBinder?.getDuration() ?: 0
                         startUpdatingProgress()
                     }
 
-                    MusicPlayerAction.PAUSE -> {
+                    MusicPlayerAction.PAUSED -> {
                         stopUpdatingProgress()
                     }
 
@@ -135,7 +140,7 @@ class MusicPlayerActivity : AppCompatActivity(), ResultCallback<Status>,
                         binding.musicProgress.progress = 0
                     }
 
-                    else -> Unit
+                    MusicPlayerAction.CHANGEMUSIC -> Unit
                 }
             }
         }
@@ -149,20 +154,20 @@ class MusicPlayerActivity : AppCompatActivity(), ResultCallback<Status>,
     private fun setClickListeners() {
         binding.run {
             buttonPlay.setOnClickListener {
-                binder?.play()
+                playerBinder?.playMusic(0)
             }
             buttonPause.setOnClickListener {
-                binder?.pause()
+                playerBinder?.pause()
             }
             buttonStop.setOnClickListener {
                 binding.musicProgress.progress = 0
-                binder?.stop()
+                playerBinder?.stop()
             }
             buttonNext.setOnClickListener {
-                binder?.next()
+                playerBinder?.next()
             }
             buttonPrevious.setOnClickListener {
-                binder?.previous()
+                playerBinder?.previous()
             }
         }
     }
@@ -172,8 +177,7 @@ class MusicPlayerActivity : AppCompatActivity(), ResultCallback<Status>,
             musicProgress.setOnSeekBarChangeListener(object :
                 SeekBar.OnSeekBarChangeListener {
                 override fun onStopTrackingTouch(seekBar: SeekBar) {
-                    mediaPlayer.seekTo(musicProgress.progress)
-                    mediaPlayer.start()
+                    playerBinder?.seekAndStart(musicProgress.progress)
                 }
 
                 override fun onStartTrackingTouch(seekBar: SeekBar) {}
@@ -181,44 +185,29 @@ class MusicPlayerActivity : AppCompatActivity(), ResultCallback<Status>,
                     seekBar: SeekBar, progress: Int,
                     fromUser: Boolean
                 ) {
-                    if (fromUser) {
-                        mediaPlayer.seekTo(progress)
-                    }
+                    playerBinder?.handleSeekBarChange(progress, fromUser)
                 }
             })
         }
     }
 
     private fun setupPlayList() {
-        playlist = getAllMusics()
-        binding.listaMusicas.apply {
-            adapter = ArrayAdapter(
-                this@MusicPlayerActivity,
-                R.layout.lista_titulo_sumario_texto,
-                playlist.map { it.title }
-            )
-            setOnItemClickListener { _, _, position, _ ->
-                binder?.playMusic(position)
-            }
-            setOnItemLongClickListener { _, view, _, _ ->
-                val intent = Intent(this@MusicPlayerActivity, MapsActivity::class.java)
-                intent.putExtra("nomeMusica", (view as TextView).text.toString())
-                startActivity(intent)
-                false
-            }
-        }
-    }
-
-    override fun onRequestPermissionsResult(
-        requestCode: Int,
-        permissions: Array<String>,
-        grantResults: IntArray
-    ) {
-        super.onRequestPermissionsResult(requestCode, permissions, grantResults)
-        when (requestCode) {
-            MY_PERMISSIONS_READ_EXTERNAL_STORAGE -> {
-                if (grantResults.isNotEmpty() && grantResults[0] == PackageManager.PERMISSION_GRANTED) {
-                    setupPlayList()
+        getAllMusics().also { musics ->
+            playerBinder?.submitPlaylist(musics)
+            binding.listaMusicas.apply {
+                adapter = ArrayAdapter(
+                    this@MusicPlayerActivity,
+                    R.layout.lista_titulo_sumario_texto,
+                    musics.map { music -> music.title }
+                )
+                setOnItemClickListener { _, _, position, _ ->
+                    playerBinder?.playMusic(position)
+                }
+                setOnItemLongClickListener { _, view, _, _ ->
+                    val intent = Intent(this@MusicPlayerActivity, MapsActivity::class.java)
+                    intent.putExtra("nomeMusica", (view as TextView).text.toString())
+                    startActivity(intent)
+                    false
                 }
             }
         }
@@ -257,8 +246,8 @@ class MusicPlayerActivity : AppCompatActivity(), ResultCallback<Status>,
 
     private fun startUpdatingProgress() {
         updateJob = lifecycleScope.launch {
-            while (mediaPlayer.isPlaying) {
-                binding.musicProgress.progress = binder?.getCurrentPosition() ?: 0
+            while (playerBinder?.musicPlayerState?.value == MusicPlayerAction.PLAYING) {
+                binding.musicProgress.progress = playerBinder?.getCurrentPosition() ?: 0
                 delay(150)
             }
         }
@@ -296,18 +285,16 @@ class MusicPlayerActivity : AppCompatActivity(), ResultCallback<Status>,
             ) {
                 val nomeMusica = geo.musicName
                 Log.i("Musica Geo", nomeMusica)
-                for ((index, i) in playlist.indices.withIndex()) {
-                    if (playlist[i].title?.contains(nomeMusica) == true) {
-                        Log.d("teste", "Play music")
-                        binder?.playMusic(index)
-                        binder?.play()
+                playerBinder?.run {
+                    for ((index, i) in getPlaylist().indices.withIndex()) {
+                        if (getPlaylist()[i].title?.contains(nomeMusica) == true) {
+                            Log.d("teste", "Play music")
+                            playerBinder?.playMusic(index)
+                            playerBinder?.play()
+                        }
                     }
                 }
             }
         }
-    }
-
-    companion object {
-        const val MY_PERMISSIONS_READ_EXTERNAL_STORAGE = 1
     }
 }
